@@ -97,6 +97,18 @@ export const isHttp = (input: string) => {
   return input.startsWith("http");
 };
 
+export const isBilibili = (input: string) => {
+  try {
+    const url = new URL(input);
+    return (
+      ["http:", "https:"].includes(url.protocol) &&
+      ["bilibili.com", "www.bilibili.com", "m.bilibili.com", "b23.tv"].includes(url.hostname)
+    );
+  } catch {
+    return false;
+  }
+};
+
 export const isMagnet = (input: string) => {
   return input.startsWith("magnet:");
 };

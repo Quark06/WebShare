@@ -14,6 +14,7 @@ import {
   calculateMedian,
   getUserImage,
   isYouTube,
+  isBilibili,
   isMagnet,
   isHttp,
   isHls,
@@ -261,6 +262,7 @@ export class App extends React.Component<AppProps, AppState> {
   publisherConns: PCDict = {};
   consumerConn?: RTCPeerConnection;
   progressUpdater?: number;
+  mediaLoadRevision = 0;
   heartbeat: number | undefined = undefined;
   YouTubeInterface: YouTube = new YouTube(null);
   HTMLInterface: HTML = new HTML("leftVideo");
@@ -301,6 +303,7 @@ export class App extends React.Component<AppProps, AppState> {
   }
 
   componentWillUnmount() {
+    this.mediaLoadRevision++;
     document.removeEventListener("fullscreenchange", this.onFullScreenChange);
     document.removeEventListener("keydown", this.onKeydown);
     window.clearInterval(this.heartbeat);
@@ -424,7 +427,10 @@ export class App extends React.Component<AppProps, AppState> {
       this.setState({ controller: data });
     });
     socket.on("REC:host", async (data: HostState) => {
+      const loadRevision = ++this.mediaLoadRevision;
       let currentMedia = data.video || "";
+      const changingBilibili =
+        isBilibili(currentMedia) || isBilibili(this.state.roomMedia);
       if (this.playingScreenShare() && !isScreenShare(currentMedia)) {
         this.stopPublishingLocalStream();
       }
@@ -459,6 +465,7 @@ export class App extends React.Component<AppProps, AppState> {
           roomPlaybackRate: data.playbackRate,
           loading: Boolean(data.video),
           nonPlayableMedia: false,
+          errorMessage: changingBilibili ? "" : this.state.errorMessage,
           isVBrowserLarge: data.isVBrowserLarge,
           vBrowserResolution: "1280x720@30",
           vBrowserQuality: "1",
@@ -466,7 +473,13 @@ export class App extends React.Component<AppProps, AppState> {
           isLiveStream: false,
         },
         async () => {
+          if (loadRevision !== this.mediaLoadRevision) return;
           const leftVideo = this.HTMLInterface.getVideoEl();
+          if (changingBilibili) {
+            window.watchparty.dash?.reset();
+            window.watchparty.dash = undefined;
+            window.watchparty.hls?.detachMedia();
+          }
 
           // Stop all players
           // Unless the user is sharing a file, because we play it in leftVideo and capture stream
@@ -505,8 +518,33 @@ export class App extends React.Component<AppProps, AppState> {
             );
             return;
           }
-          const src = data.video;
+          let src = data.video;
           const time = data.videoTS;
+          if (isBilibili(currentMedia)) {
+            try {
+              const response = await fetch(
+                serverPath + "/bilibili?url=" + encodeURIComponent(currentMedia),
+              );
+              const source = await response.json();
+              if (loadRevision !== this.mediaLoadRevision) return;
+              if (!response.ok) {
+                throw new Error(source.error || "Bilibili resolution failed.");
+              }
+              src = source.url.startsWith("/")
+                ? serverPath + source.url
+                : source.url;
+            } catch (error) {
+              if (loadRevision !== this.mediaLoadRevision) return;
+              this.setState({
+                loading: false,
+                nonPlayableMedia: true,
+                errorMessage: error instanceof Error
+                  ? error.message
+                  : "Bilibili resolution failed.",
+              });
+              return;
+            }
+          }
           if (isMagnet(src)) {
             // WebTorrent
             if (!window.watchparty.webtorrent) {
@@ -585,6 +623,7 @@ export class App extends React.Component<AppProps, AppState> {
           } else if (isDash(src)) {
             if (!window.watchparty.dash) {
               const Dash = await import("dashjs");
+              if (loadRevision !== this.mediaLoadRevision) return;
               window.watchparty.dash = Dash.MediaPlayer().create();
               window.watchparty.dash.on("streamInitialized", (_e: any) => {
                 // for a live stream:
@@ -629,14 +668,18 @@ export class App extends React.Component<AppProps, AppState> {
             await this.Player().setSrcAndTime(src, time);
           }
           // Start this video
-          if (!data.paused) {
+          if (!data.paused && !isBilibili(currentMedia)) {
             this.localPlay();
           }
           // Do right before playing
           leftVideo?.addEventListener(
             "canplay",
             () => {
+              if (loadRevision !== this.mediaLoadRevision) return;
               this.setLoadingFalse();
+              if (isBilibili(currentMedia)) {
+                this.setState({ nonPlayableMedia: false, errorMessage: "" });
+              }
               let ts = undefined;
               // WebTorrent and Hls and Dash reset position back to 0 so set it back here
               if (
@@ -648,7 +691,12 @@ export class App extends React.Component<AppProps, AppState> {
                 ts = time;
               }
               // Resync to leader since the loading might have taken some time
-              this.localSeek(ts);
+              if (isBilibili(currentMedia)) {
+                const leader = this.getLeaderTime();
+                this.localSeek(Number.isFinite(leader) && leader >= 0 ? leader : time);
+              } else {
+                this.localSeek(ts);
+              }
               if (this.state.uploadController) {
                 // Jump back to the start of the video
                 this.roomSeek(0);
@@ -657,6 +705,9 @@ export class App extends React.Component<AppProps, AppState> {
                 // Set playback rate again since it might have been lost
                 console.log("setting playback rate again", data.playbackRate);
                 this.Player().setPlaybackRate(data.playbackRate);
+              }
+              if (isBilibili(currentMedia) && !this.state.roomPaused) {
+                this.localPlay();
               }
             },
             { once: true },
@@ -2458,7 +2509,9 @@ export class App extends React.Component<AppProps, AppState> {
                             >
                               <Loader />
                               <div>
-                                {this.playingVBrowser()
+                                {isBilibili(this.state.roomMedia)
+                                  ? "Resolving Bilibili video…"
+                                  : this.playingVBrowser()
                                   ? "Launching virtual browser. This can take up to a minute."
                                   : ""}
                               </div>
@@ -2476,10 +2529,13 @@ export class App extends React.Component<AppProps, AppState> {
                             this.state.nonPlayableMedia && (
                               <Alert
                                 color="red"
-                                title="It doesn't look like this is a media file!"
+                                title={isBilibili(this.state.roomMedia)
+                                  ? "Couldn't play this Bilibili video"
+                                  : "It doesn't look like this is a media file!"}
                               >
-                                Maybe you meant to launch a VBrowser if you're
-                                trying to visit a web page?
+                                {isBilibili(this.state.roomMedia)
+                                  ? this.state.errorMessage || "The video source could not be loaded."
+                                  : "Maybe you meant to launch a VBrowser if you're trying to visit a web page?"}
                               </Alert>
                             )}
                         </div>
@@ -2530,7 +2586,24 @@ export class App extends React.Component<AppProps, AppState> {
                           maxHeight: VIDEO_MAX_HEIGHT_CSS,
                         }}
                         id="leftVideo"
-                        onEnded={(e) => this.onVideoEnded(e.currentTarget.src)}
+                        onEnded={(e) => this.onVideoEnded(
+                          isBilibili(this.state.roomMedia)
+                            ? this.state.roomMedia
+                            : e.currentTarget.src,
+                        )}
+                        onError={(e) => {
+                          if (
+                            isBilibili(this.state.roomMedia) &&
+                            e.currentTarget.getAttribute("src") &&
+                            e.currentTarget.error
+                          ) {
+                            this.setState({
+                              loading: false,
+                              nonPlayableMedia: true,
+                              errorMessage: "Couldn't load this Bilibili video. Please check the video availability or try again later.",
+                            });
+                          }
+                        }}
                         playsInline
                         onClick={this.roomTogglePlay}
                       ></video>

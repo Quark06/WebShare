@@ -161,7 +161,7 @@ export class ComboBox extends React.Component<ComboBoxProps, ComboBoxState> {
           </ActionIcon>
         }
         leftSection={this.state.loading ? <Loader size="sm" /> : <IconLink />}
-        placeholder="Enter video file URL, magnet link, YouTube link, or YouTube search term"
+        placeholder="Enter a Bilibili or YouTube link, video file URL, magnet link, or YouTube search term"
         value={
           this.state.inputMedia !== undefined
             ? this.state.inputMedia

@@ -14,6 +14,7 @@ A website for watching videos together.
   - Stream-your-own-file
   - Video files on the Internet (anything accessible via HTTP)
   - YouTube videos
+  - Bilibili video links (direct HTML5 single-file MP4 playback)
   - Magnet links (via WebTorrent)
   - .m3u8 streams (HLS)
 - Create separate rooms for users on demand
@@ -48,6 +49,14 @@ Without an API key you won't be able to search for videos via the searchbox.
 After creating a **YouTube Data API V3** access, you can create an API key which you can add to your environment variables by copying the `.env.example`, renaming it to `.env` and adding the key to the YOUTUBE_API_KEY variable.
 
 After that restart your server to enable the YouTube API access on your server.
+
+### Bilibili videos
+
+Paste an ordinary Bilibili video URL (`bilibili.com/video/BV...`, `av...`, or a `b23.tv` short link) into the existing room input. An explicit `?p=2` selects that part; automatic multi-part playback is not added. The room and playlist retain the original link.
+
+Bilibili playback works without additional configuration. The server requests video metadata and a single-file MP4 using Bilibili's `platform=html5` playback API, following the API approach described in [BiliAnalysis](https://github.com/mmyo456/BiliAnalysis). The browser plays the file directly from Bilibili with the existing video element. Video traffic does not pass through WebShare. Actual quality depends on the video and API response, and API requests can still be rejected by Bilibili.
+
+Successful resolutions are shared and cached for five minutes; failed resolutions are cached for 30 seconds to reduce repeated requests. WebShare does not download, merge, or transcode the media. Search, live streams, and login-required content are not part of this integration.
 
 ### Firebase Config (user authentication)
 
