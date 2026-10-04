@@ -10,6 +10,10 @@ const defaults = {
   REDIS_URL: "", // Optional, for metrics
   DATABASE_URL: "", // Optional, for permanent rooms and VBrowser management
   YOUTUBE_API_KEY: "", // Optional, provide one to enable searching YouTube
+  METING_NETEASE_COOKIE: "", // Optional, your own music platform login cookies (server only)
+  METING_TENCENT_COOKIE: "",
+  METING_KUGOU_COOKIE: "",
+  METING_KUWO_COOKIE: "",
   NODE_ENV: "", // Usually, you should let process.env.NODE_ENV override this
   FIREBASE_ADMIN_SDK_CONFIG: "", // Optional, for features requiring sign-in/authentication
   FIREBASE_DATABASE_URL: "", // Optional (unused)

@@ -1,8 +1,8 @@
-# WatchParty
+# WebShare
 
 ![screenshot](https://github.com/howardchung/watchparty/raw/master/public/screenshot_full.png)
 
-A website for watching videos together.
+A website for watching videos and listening to music together, based on [WatchParty](https://github.com/howardchung/watchparty).
 
 ## Description
 
@@ -15,6 +15,7 @@ A website for watching videos together.
   - Video files on the Internet (anything accessible via HTTP)
   - YouTube videos
   - Bilibili video links (direct HTML5 single-file MP4 playback)
+  - Music song links and playlists from NetEase, QQ Music, KuGou and Kuwo (via Meting)
   - Magnet links (via WebTorrent)
   - .m3u8 streams (HLS)
 - Create separate rooms for users on demand
@@ -23,8 +24,10 @@ A website for watching videos together.
 
 ## Quick Start
 
-- Clone this repo via `git clone git@github.com:howardchung/watchparty.git`
-- Install npm dependencies for the project via `npm install`
+- Use Node.js 24 or newer.
+- Clone this repo via `git clone git@github.com:Quark06/WebShare.git` and enter the `WebShare` directory.
+- Duplicate `.env.example` as `.env` and add config for the features you want as described in the advanced setup.
+- Install npm dependencies for the project via `npm ci`
 - Start the server via `npm run dev`
   - Defaults to port 8080, customize with `PORT` env var
   - Set `SSL_KEY_FILE` and `SSL_CRT_FILE` for HTTPS.
@@ -32,9 +35,8 @@ A website for watching videos together.
   - Point to server using `VITE_SERVER_HOST` env var if you customized it above
   - Set `SSL_KEY_FILE` and `SSL_CRT_FILE` for HTTPS.
   - HTTPS is required by the browser for some WebRTC features (camera, etc.)
-- Duplicate the `.env.example` file
-- Rename it to `.env`
-- Add config for the features you want as described in the advanced setup
+
+For a production build, run `npm run build`, then start the server with `NODE_ENV=production` and `npm start`. The same server serves the built frontend and the API on port 8080 by default.
 
 ## Advanced Setup (optional)
 
@@ -57,6 +59,25 @@ Paste an ordinary Bilibili video URL (`bilibili.com/video/BV...`, `av...`, or a 
 Bilibili playback works without additional configuration. The server requests video metadata and a single-file MP4 using Bilibili's `platform=html5` playback API, following the API approach described in [BiliAnalysis](https://github.com/mmyo456/BiliAnalysis). The browser plays the file directly from Bilibili with the existing video element. Video traffic does not pass through WebShare. Actual quality depends on the video and API response, and API requests can still be rejected by Bilibili.
 
 Successful resolutions are shared and cached for five minutes; failed resolutions are cached for 30 seconds to reduce repeated requests. WebShare does not download, merge, or transcode the media. Search, live streams, and login-required content are not part of this integration.
+
+### Music (Meting)
+
+Music uses the Node.js library [Meting](https://github.com/metowolf/Meting) inside the existing server. No separate resolver service is required. Use the search-platform selector beside the room input to search NetEase, QQ Music, KuGou or Kuwo; select a result to play it or use its existing **Add to Playlist** button. YouTube remains the default search platform.
+
+You can also paste standard song links directly:
+
+- NetEase: `https://music.163.com/song?id=...` (including `#/song?id=...` links)
+- QQ Music: `https://y.qq.com/n/ryqq/songDetail/...` or `https://y.qq.com/n/yqq/song/....html`
+- KuGou: `https://www.kugou.com/song/#hash=...`
+- Kuwo: `https://www.kuwo.cn/play_detail/...`
+
+Standard playlist links are supported for the same platforms: NetEase `/playlist?id=...`, QQ Music `/n/ryqq/playlist/...`, KuGou `/yy/special/single/....html`, and Kuwo `/playlist_detail/...`. Paste one to browse its tracks; press Enter to add the returned tracks to the room queue, or select an individual track to play it. The existing room media keeps playing while a playlist is added. Playlist size and availability depend on the platform response; private playlists and platform share-short-link resolution are not included.
+
+The room retains song links and resolves the current song on demand at 128 kbps where available. The browser plays audio directly from the platform CDN; WebShare only handles API requests and does not proxy or download audio. Search, track and playlist metadata are cached, and concurrent resolutions share one request chain. Cached failures are retained for 30 seconds. The music stage shows the song and artist, with artwork where available. A **Preview only** label appears when the playable audio is substantially shorter than the track metadata.
+
+The music stage places the artwork and song information on the left, with scrolling lyrics on the right. Timestamped LRC lyrics follow the actual local playback position, highlighting and centering the current line; translations are shown when supplied by the platform. Plain lyrics remain manually scrollable. Lyrics load independently of the audio through Meting and are cached for 30 minutes; unavailable lyrics do not prevent playback.
+
+Anonymous playback may return a preview or no URL. If needed, configure your own platform login Cookie in the server `.env` with `METING_NETEASE_COOKIE`, `METING_TENCENT_COOKIE`, `METING_KUGOU_COOKIE`, or `METING_KUWO_COOKIE`, then restart the server. Cookies stay on the server and do not remove account or platform restrictions. Sources requiring media request headers that the browser cannot send may still fail direct playback. Migu, Spotify and Apple Music import and automatic cross-platform matching are not part of this initial Meting integration.
 
 ### Firebase Config (user authentication)
 

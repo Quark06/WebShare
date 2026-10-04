@@ -28,6 +28,9 @@ yarn-error.log*
 # WebShare local preview
 /.local/
 /.idea/
+# Local agent instructions
+AGENTS.md
+AGENT.md
 # Local planning and preview notes
 /开发路线讨论.md
 /本机预览说明.md

@@ -5,6 +5,7 @@ import firebase from "firebase/compat/app";
 import config from "../config";
 import { cyrb53 } from "./hash";
 import React from "react";
+import { getMusicReference, type MusicPlatform } from "./music";
 
 export function formatTimestamp(input: any, zeroTime?: number): string {
   if (
@@ -102,7 +103,9 @@ export const isBilibili = (input: string) => {
     const url = new URL(input);
     return (
       ["http:", "https:"].includes(url.protocol) &&
-      ["bilibili.com", "www.bilibili.com", "m.bilibili.com", "b23.tv"].includes(url.hostname)
+      ["bilibili.com", "www.bilibili.com", "m.bilibili.com", "b23.tv"].includes(
+        url.hostname,
+      )
     );
   } catch {
     return false;
@@ -236,7 +239,9 @@ export async function getMediaPathResults(
   //     name: mediaPath + '/' + file.Key,
   //   }));
   // } else
-  if (mediaPath.startsWith("https://www.youtube.com/playlist?list=")) {
+  if (getMusicReference(mediaPath)?.kind === "playlist") {
+    results = await getMusicPlaylistResults(mediaPath);
+  } else if (mediaPath.startsWith("https://www.youtube.com/playlist?list=")) {
     // https://www.youtube.com/playlist?list=<playlist ID>
     const playlistID = mediaPath.split(
       "https://www.youtube.com/playlist?list=",
@@ -277,6 +282,21 @@ export async function getYouTubeResults(
   const data = await response.json();
   return data.map((d: any) => ({ ...d, type: "youtube" }));
 }
+
+async function musicResults(path: string): Promise<SearchResult[]> {
+  const response = await fetch(serverPath + path);
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.error || "Music search failed.");
+  return data;
+}
+
+export const getMusicResults = (platform: MusicPlatform, query: string) =>
+  musicResults(
+    `/music/search?platform=${platform}&q=${encodeURIComponent(query)}`,
+  );
+
+export const getMusicPlaylistResults = (url: string) =>
+  musicResults(`/music/playlist?url=${encodeURIComponent(url)}`);
 
 export async function openFileSelector(accept?: string) {
   return new Promise<FileList | null>((resolve) => {

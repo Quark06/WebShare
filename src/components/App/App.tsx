@@ -46,6 +46,8 @@ import { FileShareModal } from "../Modal/FileShareModal";
 import firebase from "firebase/compat/app";
 import { SubtitleModal } from "../Modal/SubtitleModal";
 import { HTML } from "./HTML";
+import { isMusic } from "../../utils/music";
+import { MusicLyrics } from "../MusicLyrics/MusicLyrics";
 import { YouTube } from "./YouTube";
 import styles from "./App.module.css";
 import config from "../../config";
@@ -60,6 +62,7 @@ import {
   IconFile,
   IconKeyboardFilled,
   IconList,
+  IconMusic,
   IconScreenShare,
   IconSettings,
   IconUser,
@@ -105,6 +108,8 @@ interface AppProps {
 interface AppState {
   state: "starting" | "connected";
   roomMedia: string;
+  musicTrack?: PlaylistVideo;
+  musicPreview?: boolean;
   roomSubtitle: string;
   roomPaused: boolean;
   roomLoop: boolean;
@@ -429,8 +434,11 @@ export class App extends React.Component<AppProps, AppState> {
     socket.on("REC:host", async (data: HostState) => {
       const loadRevision = ++this.mediaLoadRevision;
       let currentMedia = data.video || "";
-      const changingBilibili =
-        isBilibili(currentMedia) || isBilibili(this.state.roomMedia);
+      const changingResolvedMedia =
+        isBilibili(currentMedia) ||
+        isBilibili(this.state.roomMedia) ||
+        isMusic(currentMedia) ||
+        isMusic(this.state.roomMedia);
       if (this.playingScreenShare() && !isScreenShare(currentMedia)) {
         this.stopPublishingLocalStream();
       }
@@ -459,13 +467,15 @@ export class App extends React.Component<AppProps, AppState> {
       this.setState(
         {
           roomMedia: currentMedia,
+          musicTrack: undefined,
+          musicPreview: false,
           roomPaused: data.paused,
           roomSubtitle: data.subtitle,
           roomLoop: data.loop,
           roomPlaybackRate: data.playbackRate,
           loading: Boolean(data.video),
           nonPlayableMedia: false,
-          errorMessage: changingBilibili ? "" : this.state.errorMessage,
+          errorMessage: changingResolvedMedia ? "" : this.state.errorMessage,
           isVBrowserLarge: data.isVBrowserLarge,
           vBrowserResolution: "1280x720@30",
           vBrowserQuality: "1",
@@ -475,7 +485,7 @@ export class App extends React.Component<AppProps, AppState> {
         async () => {
           if (loadRevision !== this.mediaLoadRevision) return;
           const leftVideo = this.HTMLInterface.getVideoEl();
-          if (changingBilibili) {
+          if (changingResolvedMedia) {
             window.watchparty.dash?.reset();
             window.watchparty.dash = undefined;
             window.watchparty.hls?.detachMedia();
@@ -520,16 +530,22 @@ export class App extends React.Component<AppProps, AppState> {
           }
           let src = data.video;
           const time = data.videoTS;
-          if (isBilibili(currentMedia)) {
+          if (isBilibili(currentMedia) || isMusic(currentMedia)) {
             try {
               const response = await fetch(
-                serverPath + "/bilibili?url=" + encodeURIComponent(currentMedia),
+                serverPath +
+                  (isMusic(currentMedia)
+                    ? "/music/resolve?url="
+                    : "/bilibili?url=") +
+                  encodeURIComponent(currentMedia),
               );
               const source = await response.json();
               if (loadRevision !== this.mediaLoadRevision) return;
               if (!response.ok) {
-                throw new Error(source.error || "Bilibili resolution failed.");
+                throw new Error(source.error || "Media resolution failed.");
               }
+              if (isMusic(currentMedia))
+                this.setState({ musicTrack: { ...source, url: currentMedia } });
               src = source.url.startsWith("/")
                 ? serverPath + source.url
                 : source.url;
@@ -538,9 +554,10 @@ export class App extends React.Component<AppProps, AppState> {
               this.setState({
                 loading: false,
                 nonPlayableMedia: true,
-                errorMessage: error instanceof Error
-                  ? error.message
-                  : "Bilibili resolution failed.",
+                errorMessage:
+                  error instanceof Error
+                    ? error.message
+                    : "Media resolution failed.",
               });
               return;
             }
@@ -668,7 +685,11 @@ export class App extends React.Component<AppProps, AppState> {
             await this.Player().setSrcAndTime(src, time);
           }
           // Start this video
-          if (!data.paused && !isBilibili(currentMedia)) {
+          if (
+            !data.paused &&
+            !isBilibili(currentMedia) &&
+            !isMusic(currentMedia)
+          ) {
             this.localPlay();
           }
           // Do right before playing
@@ -677,7 +698,7 @@ export class App extends React.Component<AppProps, AppState> {
             () => {
               if (loadRevision !== this.mediaLoadRevision) return;
               this.setLoadingFalse();
-              if (isBilibili(currentMedia)) {
+              if (isBilibili(currentMedia) || isMusic(currentMedia)) {
                 this.setState({ nonPlayableMedia: false, errorMessage: "" });
               }
               let ts = undefined;
@@ -691,9 +712,11 @@ export class App extends React.Component<AppProps, AppState> {
                 ts = time;
               }
               // Resync to leader since the loading might have taken some time
-              if (isBilibili(currentMedia)) {
+              if (isBilibili(currentMedia) || isMusic(currentMedia)) {
                 const leader = this.getLeaderTime();
-                this.localSeek(Number.isFinite(leader) && leader >= 0 ? leader : time);
+                const target =
+                  Number.isFinite(leader) && leader >= 0 ? leader : time;
+                this.localSeek(data.paused ? time : target);
               } else {
                 this.localSeek(ts);
               }
@@ -706,7 +729,18 @@ export class App extends React.Component<AppProps, AppState> {
                 console.log("setting playback rate again", data.playbackRate);
                 this.Player().setPlaybackRate(data.playbackRate);
               }
-              if (isBilibili(currentMedia) && !this.state.roomPaused) {
+              if (isMusic(currentMedia)) {
+                const duration = this.Player().getDuration();
+                const expected = this.state.musicTrack?.duration || 0;
+                this.setState({
+                  musicPreview:
+                    expected > duration + 5 && duration < expected * 0.85,
+                });
+              }
+              if (
+                (isBilibili(currentMedia) || isMusic(currentMedia)) &&
+                !this.state.roomPaused
+              ) {
                 this.localPlay();
               }
             },
@@ -1957,6 +1991,9 @@ export class App extends React.Component<AppProps, AppState> {
     if (!input) {
       return "";
     }
+    if (input === this.state.roomMedia && this.state.musicTrack) {
+      return `${this.state.musicTrack.name} · ${this.state.musicTrack.channel}`;
+    }
     // Show the whole URL for youtube
     if (this.usingYoutube()) {
       return input;
@@ -2448,7 +2485,7 @@ export class App extends React.Component<AppProps, AppState> {
                           )}
                           {playlist.map(
                             (item: PlaylistVideo, index: number) => {
-                              if (Boolean(item.img)) {
+                              if (Boolean(item.img) && item.type !== "music") {
                                 item.type = "youtube";
                               }
                               return (
@@ -2509,11 +2546,13 @@ export class App extends React.Component<AppProps, AppState> {
                             >
                               <Loader />
                               <div>
-                                {isBilibili(this.state.roomMedia)
-                                  ? "Resolving Bilibili video…"
-                                  : this.playingVBrowser()
-                                  ? "Launching virtual browser. This can take up to a minute."
-                                  : ""}
+                                {isMusic(this.state.roomMedia)
+                                  ? "Resolving music…"
+                                  : isBilibili(this.state.roomMedia)
+                                    ? "Resolving Bilibili video…"
+                                    : this.playingVBrowser()
+                                      ? "Launching virtual browser. This can take up to a minute."
+                                      : ""}
                               </div>
                             </div>
                           )}
@@ -2529,15 +2568,54 @@ export class App extends React.Component<AppProps, AppState> {
                             this.state.nonPlayableMedia && (
                               <Alert
                                 color="red"
-                                title={isBilibili(this.state.roomMedia)
-                                  ? "Couldn't play this Bilibili video"
-                                  : "It doesn't look like this is a media file!"}
+                                title={
+                                  isMusic(this.state.roomMedia)
+                                    ? "Couldn't play this song"
+                                    : isBilibili(this.state.roomMedia)
+                                      ? "Couldn't play this Bilibili video"
+                                      : "It doesn't look like this is a media file!"
+                                }
                               >
-                                {isBilibili(this.state.roomMedia)
-                                  ? this.state.errorMessage || "The video source could not be loaded."
+                                {isBilibili(this.state.roomMedia) ||
+                                isMusic(this.state.roomMedia)
+                                  ? this.state.errorMessage ||
+                                    "The media source could not be loaded."
                                   : "Maybe you meant to launch a VBrowser if you're trying to visit a web page?"}
                               </Alert>
                             )}
+                        </div>
+                      )}
+                    {isMusic(this.state.roomMedia) &&
+                      this.state.musicTrack &&
+                      !this.state.loading &&
+                      !this.state.nonPlayableMedia && (
+                        <div className={styles.musicContent}>
+                          <div
+                            className={styles.musicInfo}
+                            onClick={this.roomTogglePlay}
+                          >
+                            {this.state.musicTrack.img ? (
+                              <img
+                                className={styles.musicCover}
+                                src={this.state.musicTrack.img}
+                                alt="Album cover"
+                              />
+                            ) : (
+                              <IconMusic size={100} />
+                            )}
+                            <Title order={3}>
+                              {this.state.musicTrack.name}
+                            </Title>
+                            <div>{this.state.musicTrack.channel}</div>
+                            {this.state.musicPreview && (
+                              <Badge color="yellow">Preview only</Badge>
+                            )}
+                          </div>
+                          <MusicLyrics
+                            key={this.state.roomMedia}
+                            url={this.state.roomMedia}
+                            getCurrentTime={this.HTMLInterface.getCurrentTime}
+                          />
                         </div>
                       )}
                     <iframe
@@ -2578,29 +2656,36 @@ export class App extends React.Component<AppProps, AppState> {
                       <video
                         style={{
                           display:
-                            (this.usingNative() && !this.state.loading) ||
-                            this.state.fullScreen
+                            !isMusic(this.state.roomMedia) &&
+                            ((this.usingNative() && !this.state.loading) ||
+                              this.state.fullScreen)
                               ? "block"
                               : "none",
                           width: "100%",
                           maxHeight: VIDEO_MAX_HEIGHT_CSS,
                         }}
                         id="leftVideo"
-                        onEnded={(e) => this.onVideoEnded(
-                          isBilibili(this.state.roomMedia)
-                            ? this.state.roomMedia
-                            : e.currentTarget.src,
-                        )}
+                        onEnded={(e) =>
+                          this.onVideoEnded(
+                            isBilibili(this.state.roomMedia) ||
+                              isMusic(this.state.roomMedia)
+                              ? this.state.roomMedia
+                              : e.currentTarget.src,
+                          )
+                        }
                         onError={(e) => {
                           if (
-                            isBilibili(this.state.roomMedia) &&
+                            (isBilibili(this.state.roomMedia) ||
+                              isMusic(this.state.roomMedia)) &&
                             e.currentTarget.getAttribute("src") &&
                             e.currentTarget.error
                           ) {
                             this.setState({
                               loading: false,
                               nonPlayableMedia: true,
-                              errorMessage: "Couldn't load this Bilibili video. Please check the video availability or try again later.",
+                              errorMessage: isMusic(this.state.roomMedia)
+                                ? "Couldn't load this song directly. The source may have expired or require request headers that your browser cannot send."
+                                : "Couldn't load this Bilibili video. Please check the video availability or try again later.",
                             });
                           }
                         }}

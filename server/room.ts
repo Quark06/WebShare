@@ -1,4 +1,6 @@
 import config from "./config.ts";
+import { getMusicTrack } from "./utils/music.ts";
+import { isMusic } from "../src/utils/music.ts";
 import axios from "axios";
 import { Server, Socket } from "socket.io";
 import { getUser, validateUserToken } from "./utils/firebase.ts";
@@ -190,7 +192,7 @@ export class Room {
       }
       // Keep track of the current socketID associated with this client (only used for signaling and kicking)
       this.socketIdMap[clientId] = socket.id;
-      if (!this.roster.find(user => user.id === clientId)) {
+      if (!this.roster.find((user) => user.id === clientId)) {
         this.roster.push({ id: clientId });
       }
 
@@ -675,7 +677,8 @@ export class Room {
       data &&
       this.video &&
       data !== this.video &&
-      getYoutubeVideoID(data) !== getYoutubeVideoID(this.video)
+      (!getYoutubeVideoID(this.video) ||
+        getYoutubeVideoID(data) !== getYoutubeVideoID(this.video))
     ) {
       // Validation didn't match
       return;
@@ -704,9 +707,11 @@ export class Room {
     try {
       if (youtubeVideoId) {
         video = await fetchYoutubeVideo(youtubeVideoId);
+      } else if (isMusic(data)) {
+        video = await getMusicTrack(data);
       }
     } catch (e) {
-      // Failed to fetch YouTube video info but can still add the URL
+      // Failed to fetch media metadata but can still add the URL
       console.warn(e);
     }
     if (video) {

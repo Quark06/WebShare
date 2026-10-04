@@ -9,6 +9,13 @@ import http from "node:http";
 import { Server } from "socket.io";
 import { searchYoutube, youtubePlaylist } from "./utils/youtube.ts";
 import { resolveBilibili } from "./utils/bilibili.ts";
+import {
+  searchMusic,
+  resolveMusic,
+  getMusicPlaylist,
+  getMusicLyrics,
+  parseMusicPlatform,
+} from "./utils/music.ts";
 import { Room } from "./room.ts";
 import { redis, redisCount } from "./utils/redis.ts";
 import {
@@ -288,7 +295,70 @@ app.get("/bilibili", async (req, res) => {
     });
   } catch (error) {
     res.status(502).json({
-      error: error instanceof Error ? error.message : "Bilibili resolution failed.",
+      error:
+        error instanceof Error ? error.message : "Bilibili resolution failed.",
+    });
+  }
+});
+
+app.get("/music/search", async (req, res) => {
+  try {
+    if (typeof req.query.q !== "string") {
+      res.status(400).json({ error: "A music search term is required." });
+      return;
+    }
+    const platform = parseMusicPlatform(req.query.platform);
+    res.json(await searchMusic(platform, req.query.q));
+  } catch (error) {
+    res.status(502).json({
+      error: error instanceof Error ? error.message : "Music search failed.",
+    });
+  }
+});
+
+app.get("/music/resolve", async (req, res) => {
+  if (typeof req.query.url !== "string") {
+    res.status(400).json({ error: "A music song link is required." });
+    return;
+  }
+  try {
+    res.setHeader("Cache-Control", "no-store");
+    res.json(await resolveMusic(req.query.url));
+  } catch (error) {
+    res.status(502).json({
+      error:
+        error instanceof Error ? error.message : "Music resolution failed.",
+    });
+  }
+});
+
+app.get("/music/lyrics", async (req, res) => {
+  if (typeof req.query.url !== "string") {
+    res.status(400).json({ error: "A music song link is required." });
+    return;
+  }
+  try {
+    res.json(await getMusicLyrics(req.query.url));
+  } catch (error) {
+    res.status(502).json({
+      error: error instanceof Error ? error.message : "Lyrics are unavailable.",
+    });
+  }
+});
+
+app.get("/music/playlist", async (req, res) => {
+  if (typeof req.query.url !== "string") {
+    res.status(400).json({ error: "A music playlist link is required." });
+    return;
+  }
+  try {
+    res.json(await getMusicPlaylist(req.query.url));
+  } catch (error) {
+    res.status(502).json({
+      error:
+        error instanceof Error
+          ? error.message
+          : "Music playlist import failed.",
     });
   }
 });
