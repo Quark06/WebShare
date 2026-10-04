@@ -33,6 +33,7 @@ import {
 type ComboBoxProps = {
   roomSetMedia: (value: string) => void;
   playlistAdd: (value: string) => void;
+  playlistImport: (value: string) => void;
   roomMedia: string;
   getMediaDisplayName: (input: string) => string;
   mediaPath: string | undefined;
@@ -66,8 +67,7 @@ export class ComboBox extends React.Component<ComboBoxProps, ComboBoxState> {
   setMediaAndClose = async (value: string) => {
     try {
       if (getMusicReference(value)?.kind === "playlist") {
-        const tracks = await getMusicPlaylistResults(value);
-        for (const track of tracks) this.props.playlistAdd(track.url);
+        this.props.playlistImport(value);
       } else {
         this.props.roomSetMedia(value);
       }
@@ -98,7 +98,16 @@ export class ComboBox extends React.Component<ComboBoxProps, ComboBoxState> {
     let items = examples;
     try {
       if (getMusicReference(query)?.kind === "playlist") {
-        items = await getMusicPlaylistResults(query);
+        const tracks = await getMusicPlaylistResults(query);
+        items = [
+          {
+            url: query,
+            name: `Import playlist (${tracks.length} songs)`,
+            type: "music",
+            duration: 0,
+          },
+          ...tracks.slice(0, 20),
+        ];
       } else if (
         query === "" ||
         // Non-link input is searched on the selected platform.
@@ -182,7 +191,11 @@ export class ComboBox extends React.Component<ComboBoxProps, ComboBoxState> {
             <ChatVideoCard
               video={video}
               index={0}
-              onPlaylistAdd={this.props.playlistAdd}
+              onPlaylistAdd={
+                getMusicReference(video.url)?.kind === "playlist"
+                  ? this.props.playlistImport
+                  : this.props.playlistAdd
+              }
             />
           )}
         </div>

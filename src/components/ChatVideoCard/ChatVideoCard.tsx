@@ -93,6 +93,8 @@ const ChatVideoCard: React.FC<{
               className={classes.Thumbnail}
               src={video.img}
               alt={video.name}
+              loading="lazy"
+              decoding="async"
               referrerPolicy={
                 video.type === "bilibili" ? "no-referrer" : undefined
               }

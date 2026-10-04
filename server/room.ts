@@ -1,5 +1,5 @@
 import config from "./config.ts";
-import { getMusicTrack } from "./utils/music.ts";
+import { getMusicPlaylist, getMusicTrack } from "./utils/music.ts";
 import { isMusic } from "../src/utils/music.ts";
 import axios from "axios";
 import { Server, Socket } from "socket.io";
@@ -331,6 +331,30 @@ export class Room {
       });
       socket.on("CMD:playlistAdd", (data: unknown) => {
         validateLock() && this.playlistAdd(socket, String(data));
+      });
+      socket.on("CMD:playlistImport", async (data: unknown) => {
+        if (!validateLock() || typeof data !== "string") return;
+        try {
+          const tracks = await getMusicPlaylist(data);
+          if (!validateLock() || !tracks.length) return;
+          this.playlist.push(...tracks);
+          redisCount("playlistAdds");
+          this.addChatMessage(socket, {
+            id: socket.clientId,
+            cmd: "playlistImport",
+            msg: String(tracks.length),
+          });
+          if (!this.video) {
+            this.playlistNext(null);
+          } else {
+            this.io.of(this.roomId).emit("playlist", this.playlist);
+          }
+        } catch (error) {
+          socket.emit(
+            "errorMessage",
+            error instanceof Error ? error.message : "Music playlist import failed.",
+          );
+        }
       });
       socket.on("CMD:playlistMove", (data: unknown) => {
         validateLock() && this.playlistMove(data);

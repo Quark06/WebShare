@@ -195,6 +195,8 @@ export class Chat extends React.Component<ChatProps> {
           </span>
         </React.Fragment>
       );
+    } else if (cmd === "playlistImport") {
+      return `imported ${msg} songs to the playlist`;
     } else if (cmd === "seek") {
       return `jumped to ${formatTimestamp(msg)}`;
     } else if (cmd === "play") {

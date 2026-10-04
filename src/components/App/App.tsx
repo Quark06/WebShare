@@ -1960,6 +1960,10 @@ export class App extends React.Component<AppProps, AppState> {
     this.socket.emit("CMD:playlistAdd", value);
   };
 
+  roomPlaylistImport = (value: string) => {
+    this.socket.emit("CMD:playlistImport", value);
+  };
+
   roomPlaylistMove = (index: number, toIndex: number) => {
     this.socket.emit("CMD:playlistMove", { index, toIndex });
   };
@@ -2268,6 +2272,7 @@ export class App extends React.Component<AppProps, AppState> {
                       <ComboBox
                         roomSetMedia={this.roomSetMedia}
                         playlistAdd={this.roomPlaylistAdd}
+                        playlistImport={this.roomPlaylistImport}
                         roomMedia={this.state.roomMedia}
                         getMediaDisplayName={this.getMediaDisplayName}
                         mediaPath={this.state.mediaPath}
