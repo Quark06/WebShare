@@ -1,11 +1,18 @@
 FROM node:24-alpine
 
-COPY . /usr/src
-
 WORKDIR /usr/src
 
-RUN npm ci
+COPY package.json package-lock.json ./
+RUN npm ci --include=dev
 
+COPY . .
+
+# Vite reads these public settings at build time; server secrets are runtime env.
+ARG VITE_FIREBASE_CONFIG=""
+ARG VITE_SERVER_HOST=""
+ARG VITE_OAUTH_REDIRECT_HOSTNAME=""
 RUN npm run build
 
-ENTRYPOINT ["/bin/sh", "-c" , "npm start"]
+ENV NODE_ENV=production
+EXPOSE 8080
+CMD ["node", "server/server.ts"]

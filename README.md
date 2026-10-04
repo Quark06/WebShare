@@ -1,5 +1,7 @@
 # WebShare
 
+[English](README.md) | [简体中文](README.zh-CN.md)
+
 ![screenshot](https://github.com/howardchung/watchparty/raw/master/public/screenshot_full.png)
 
 A website for watching videos and listening to music together, based on [WatchParty](https://github.com/howardchung/watchparty).
@@ -38,6 +40,12 @@ A website for watching videos and listening to music together, based on [WatchPa
   - HTTPS is required by the browser for some WebRTC features (camera, etc.)
 
 For a production build, run `npm run build`, then start the server with `NODE_ENV=production` and `npm start`. The same server serves the built frontend and the API on port 8080 by default.
+
+## Server deployment
+
+See the [server deployment guide (简体中文)](docs/DEPLOYMENT.zh-CN.md) for Linux/PM2, Nginx/HTTPS, Docker, updates, deployment audit findings and functional acceptance checks.
+
+Use `npm run pm2` for the single production `webshare` process. On an existing server, `npm run deploy` requires a clean `master` branch, pulls with fast-forward only, installs dependencies, builds and type-checks, then starts or restarts only `webshare`. GitHub Actions currently checks builds; it does not deploy to your server.
 
 ## Advanced Setup (optional)
 
