@@ -293,7 +293,7 @@ app.get("/bilibili/search", async (req, res) => {
 
 app.get("/bilibili", async (req, res) => {
   if (typeof req.query.url !== "string") {
-    res.status(400).json({ error: "A Bilibili video URL is required." });
+    res.status(400).json({ error: "A Bilibili video or live room URL is required." });
     return;
   }
   try {
@@ -302,9 +302,10 @@ app.get("/bilibili", async (req, res) => {
     res.json({
       title: media.title,
       duration: media.duration,
-      resolver: "html5",
+      resolver: media.isLive ? "stream-get" : "html5",
       quality: media.quality,
-      format: "file",
+      format: media.format || "file",
+      isLive: media.isLive || false,
       delivery: "direct",
       url: media.url,
     });

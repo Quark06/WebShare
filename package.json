@@ -25,6 +25,7 @@
     "analyze": "npx source-map-explorer 'build/assets/*.js' --html result.html --no-border-checks"
   },
   "dependencies": {
+    "@bililive-tools/stream-get": "^0.4.1",
     "@googleapis/youtube": "^8.0.2",
     "@meting/core": "1.6.1",
     "@renmu/bili-api": "2.15.2",

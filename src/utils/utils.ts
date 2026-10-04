@@ -103,9 +103,13 @@ export const isBilibili = (input: string) => {
     const url = new URL(input);
     return (
       ["http:", "https:"].includes(url.protocol) &&
-      ["bilibili.com", "www.bilibili.com", "m.bilibili.com", "b23.tv"].includes(
-        url.hostname,
-      )
+      [
+        "bilibili.com",
+        "www.bilibili.com",
+        "m.bilibili.com",
+        "live.bilibili.com",
+        "b23.tv",
+      ].includes(url.hostname)
     );
   } catch {
     return false;

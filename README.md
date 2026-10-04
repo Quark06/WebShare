@@ -15,6 +15,7 @@ A website for watching videos and listening to music together, based on [WatchPa
   - Video files on the Internet (anything accessible via HTTP)
   - YouTube videos
   - Bilibili video search and links (direct HTML5 single-file MP4 playback)
+  - Bilibili live room links (direct HLS/AVC playback via `@bililive-tools/stream-get`)
   - Music song links and playlists from NetEase, QQ Music, KuGou and Kuwo (via Meting)
   - Magnet links (via WebTorrent)
   - .m3u8 streams (HLS)
@@ -64,9 +65,11 @@ Bilibili playback works without additional configuration. The server requests vi
 
 Choose **Bilibili** in the room's search-platform selector, enter keywords and press Enter or click **Search**. Search uses [biliAPI](https://github.com/renmu123/biliAPI) (`@renmu/bili-api`) on the server to fetch the first page of ordinary video results, with titles, covers, authors and durations. Select a result to play it or use **Add to Playlist**. Results retain the video page URL; playback URLs are resolved only when a video is played. Search results are cached for five minutes, with concurrent identical searches sharing one request. Search failures are cached for 30 seconds.
 
-Anonymous search is the default. If Bilibili rejects searches, you can configure your own `BILIBILI_COOKIE` in the server `.env` and restart. The Cookie is used only for search and remains on the server. The server must be able to reach Bilibili's APIs; each viewer still loads video directly from Bilibili. Search availability does not guarantee that a video has a playable single-file MP4 source.
+Anonymous search is the default. If Bilibili rejects searches, you can configure your own `BILIBILI_COOKIE` in the server `.env` and restart. The Cookie is used for search and live stream quality requests and remains on the server. The server must be able to reach Bilibili's APIs; each viewer still loads video directly from Bilibili. Search availability does not guarantee that a video has a playable single-file MP4 source.
 
-Successful playback resolutions are shared and cached for five minutes; failed resolutions are cached for 30 seconds to reduce repeated requests. WebShare does not download, merge, or transcode the media. Live streams and login-required playback are not part of this integration.
+Paste a live room link such as `https://live.bilibili.com/123` into the same input to watch a current live broadcast. The server resolves short room IDs and obtains streams through [biliLive-tools](https://github.com/renmu123/biliLive-tools/tree/master/packages/StreamGet) (`@bililive-tools/stream-get`). It selects HLS/AVC, preferring TS streams, for the existing HLS player. The response reports the actual stream quality. Offline or unavailable rooms show an error; live search is not included. Optional `BILIBILI_COOKIE` can enable higher live qualities subject to platform/account availability.
+
+Successful playback resolutions are shared and cached for five minutes for videos and one minute for live rooms; failed resolutions are cached for 30 seconds to reduce repeated requests. Live short links through `b23.tv` are also resolved. The room and playlist keep the original room link so joining viewers obtain a current playback URL. Live playback uses the existing live-edge controls. WebShare does not download, merge, transcode, or proxy the media. Direct browser playback still depends on the stream CDN's CORS policy and availability to the viewer.
 
 ### Music (Meting)
 

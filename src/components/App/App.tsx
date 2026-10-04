@@ -529,6 +529,7 @@ export class App extends React.Component<AppProps, AppState> {
             return;
           }
           let src = data.video;
+          let resolvedLive = false;
           const time = data.videoTS;
           if (isBilibili(currentMedia) || isMusic(currentMedia)) {
             try {
@@ -546,6 +547,8 @@ export class App extends React.Component<AppProps, AppState> {
               }
               if (isMusic(currentMedia))
                 this.setState({ musicTrack: { ...source, url: currentMedia } });
+              resolvedLive = source.isLive === true;
+              if (resolvedLive) this.setState({ isLiveStream: true });
               src = source.url.startsWith("/")
                 ? serverPath + source.url
                 : source.url;
@@ -660,6 +663,7 @@ export class App extends React.Component<AppProps, AppState> {
             // otherwise fallback to native HLS support using video tag (i.e. iPhones)
             if (!window.watchparty.hls) {
               const Hls = (await import("hls.js")).default;
+              if (loadRevision !== this.mediaLoadRevision) return;
               window.watchparty.hls = new Hls();
               window.watchparty.hls.on(Hls.Events.LEVEL_LOADED, (_, data) => {
                 const isLiveStream = data.details.live;
@@ -716,7 +720,7 @@ export class App extends React.Component<AppProps, AppState> {
                 const leader = this.getLeaderTime();
                 const target =
                   Number.isFinite(leader) && leader >= 0 ? leader : time;
-                this.localSeek(data.paused ? time : target);
+                this.localSeek(resolvedLive ? time : data.paused ? time : target);
               } else {
                 this.localSeek(ts);
               }

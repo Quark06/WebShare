@@ -11,7 +11,7 @@ const defaults = {
   DATABASE_URL: "", // Optional, for permanent rooms and VBrowser management
   YOUTUBE_API_KEY: "", // Optional, for direct YouTube link metadata and playlist imports
   YOUTUBE_PROXY_URL: "", // Optional, HTTP(S) proxy for YouTube.js search requests
-  BILIBILI_COOKIE: "", // Optional, server-only Cookie for Bilibili search
+  BILIBILI_COOKIE: "", // Optional, server-only Cookie for Bilibili search/live quality
   METING_NETEASE_COOKIE: "", // Optional, your own music platform login cookies (server only)
   METING_TENCENT_COOKIE: "",
   METING_KUGOU_COOKIE: "",

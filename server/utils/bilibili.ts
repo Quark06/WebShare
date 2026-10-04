@@ -1,3 +1,5 @@
+import { extractBilibiliLive } from "./bilibiliLive.ts";
+
 const cache = new Map<
   string,
   { expires: number; result: Promise<BilibiliMedia> }
@@ -8,12 +10,21 @@ export interface BilibiliMedia {
   duration: number;
   quality?: number;
   url: string;
+  format?: "hls";
+  isLive?: boolean;
 }
 
 export function normalizeBilibiliUrl(input: string): string {
   const url = new URL(input);
   if (!["https:", "http:"].includes(url.protocol)) {
-    throw new Error("Enter a Bilibili video URL.");
+    throw new Error("Enter a Bilibili video or live room URL.");
+  }
+  if (url.hostname === "live.bilibili.com") {
+    const roomId = url.pathname.match(/^\/(\d+)\/?$/)?.[1];
+    if (!roomId || Number(roomId) <= 0) {
+      throw new Error("Enter a Bilibili live room URL with a room number.");
+    }
+    return `https://live.bilibili.com/${roomId}`;
   }
   if (url.hostname === "b23.tv") {
     if (!/^\/[a-zA-Z0-9]+\/?$/.test(url.pathname)) {
@@ -24,7 +35,7 @@ export function normalizeBilibiliUrl(input: string): string {
   if (
     !["bilibili.com", "www.bilibili.com", "m.bilibili.com"].includes(url.hostname)
   ) {
-    throw new Error("Enter a Bilibili video URL.");
+    throw new Error("Enter a Bilibili video or live room URL.");
   }
   const id = url.pathname.match(
     /^\/video\/(BV[a-zA-Z0-9]{10}|av\d+)\/?$/,
@@ -67,6 +78,9 @@ async function extract(input: string): Promise<BilibiliMedia> {
     pageUrl = normalizeBilibiliUrl(response.url);
   }
   const page = new URL(pageUrl);
+  if (page.hostname === "live.bilibili.com") {
+    return extractBilibiliLive(pageUrl);
+  }
   const id = page.pathname.slice("/video/".length);
   const part = Number(page.searchParams.get("p") || 1);
   const metadataUrl = new URL("https://api.bilibili.com/x/web-interface/view");
@@ -110,9 +124,17 @@ export function resolveBilibili(input: string): Promise<BilibiliMedia> {
   if (cached) return cached.result;
   const result = extract(pageUrl);
   cache.set(pageUrl, { expires: now + 5 * 60 * 1000, result });
-  void result.catch(() => {
-    const entry = cache.get(pageUrl);
-    if (entry?.result === result) entry.expires = Date.now() + 30000;
-  });
+  void result.then(
+    (media) => {
+      const entry = cache.get(pageUrl);
+      if (entry?.result === result) {
+        entry.expires = Date.now() + (media.isLive ? 60000 : 5 * 60 * 1000);
+      }
+    },
+    () => {
+      const entry = cache.get(pageUrl);
+      if (entry?.result === result) entry.expires = Date.now() + 30000;
+    },
+  );
   return result;
 }
