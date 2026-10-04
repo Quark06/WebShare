@@ -2,9 +2,7 @@
 
 [English](README.md) | [简体中文](README.zh-CN.md)
 
-![界面截图](https://github.com/howardchung/watchparty/raw/master/public/screenshot_full.png)
-
-一个基于 [WatchParty](https://github.com/howardchung/watchparty) 的共同观看视频、收听音乐的网站。
+WebShare 是可自行部署的同步观影、B 站直播、音乐与聊天网站。
 
 ## 功能介绍
 
@@ -12,7 +10,7 @@
 - 所有观看者的播放、暂停和跳转进度（Seek）操作保持同步（Synchronization）。
 - 支持以下媒体来源和共享方式：
   - 屏幕共享（Screen Sharing）：整个屏幕、浏览器标签页或应用窗口。
-  - 在云端启动共享的虚拟浏览器（Virtual Browser），类似 rabb.it。
+  - 通过单独配置的服务启动共享虚拟浏览器（Virtual Browser）。
   - 共享并播放自己的本地文件（Stream Your Own File）。
   - 互联网上可通过 HTTP 访问的视频文件。
   - YouTube 视频。
@@ -30,7 +28,7 @@
 - 使用 Node.js 24 或更新版本。
 - 执行 `git clone git@github.com:Quark06/WebShare.git` 克隆仓库（Repository），然后进入 `WebShare` 目录。
 - 将 `.env.example` 复制为 `.env`，根据下方的进阶配置说明，填写所需功能的配置项。
-- 执行 `npm ci` 安装项目依赖（Dependencies）。
+- 执行 `npm ci --include=dev` 安装项目依赖（Dependencies）。
 - 执行 `npm run dev` 启动服务器。
   - 默认端口（Port）为 8080，可通过环境变量（Environment Variable）`PORT` 修改。
   - 如需 HTTPS，设置 `SSL_KEY_FILE` 和 `SSL_CRT_FILE`。
@@ -43,7 +41,7 @@
 
 ## 服务器部署
 
-请参阅[服务器部署指南](docs/DEPLOYMENT.zh-CN.md)，包含 Linux 单进程 PM2 部署、Nginx/HTTPS、Docker、更新流程、现有部署流程检查结果和功能验收（Functional Testing）。
+请参阅[服务器部署指南](docs/DEPLOYMENT.zh-CN.md)，包含 Linux 单进程 PM2 部署、Nginx/HTTPS、Docker、更新流程、运行配置说明和功能验收（Functional Testing）。
 
 常驻运行使用 `npm run pm2`；已部署服务器的更新使用 `npm run deploy`。该更新流程要求位于干净的 `master` 分支，完成依赖安装、构建（Build）和类型检查（Type Checking）后，只重启 `webshare` 应用。
 
@@ -100,6 +98,8 @@ B 站视频播放无需额外配置。服务器使用 B 站 `platform=html5` 播
 
 ### Firebase 配置（用户身份验证）
 
+默认关闭登录。启用时使用自己的 Firebase 项目；应用不再默认连接上游账号或分析服务（Analytics）。
+
 项目使用 Firebase 进行身份验证（Authentication），用于用户登录、账号管理、订阅，以及房间锁定和永久房间等功能。
 
 首先在 [Firebase 控制台](https://console.firebase.google.com/) 创建新的应用，或复用已有应用。创建后，点击左侧菜单中「Project overview」旁的齿轮图标，进入项目设置（Project Settings）。向下滚动，创建 Web 应用，并复制 Firebase SDK 配置片段中的 JSON 数据。
@@ -120,7 +120,7 @@ B 站视频播放无需额外配置。服务器使用 B 站 `platform=html5` 播
 
 ### 房间持久化
 
-- 在 `.env` 中添加 `DATABASE_URL` 来配置 PostgreSQL，并初始化数据库结构（Database Schema）。
+- 在 `.env` 中添加 `DATABASE_URL` 来配置 PostgreSQL，使用 [sql/schema.sql](sql/schema.sql) 初始化新数据库结构（Database Schema）。
 - 这样即可让房间状态持久化（Persistence），在服务器重启后继续保留。
 
 ## 技术栈（Technology Stack）
@@ -131,3 +131,17 @@ B 站视频播放无需额外配置。服务器使用 B 站 `platform=html5` 播
 - Redis
 - PostgreSQL
 - Docker
+
+## 可选集成（Optional Integrations）
+
+Discord 账号关联需要配置自己的 `VITE_DISCORD_CLIENT_ID`；授权回调（OAuth Redirect）默认使用当前站点地址。运行自己的建房机器人时，设置 `DISCORD_BOT_TOKEN` 和 `DISCORD_SITE_URL`，可选设置 `DISCORD_API_URL`，然后执行 `node server/discordBot.ts`。
+
+只有同时配置 `STRIPE_SECRET_KEY` 和自己的 `STRIPE_PRICE_ID` 才启用订阅（Subscription）。价格以自己的 Stripe 结账页面为准。后台任务（Workers）与虚拟浏览器基础设施需要单独配置。
+
+屏幕与文件共享、视频聊天默认使用公共 STUN 服务。需要中继（TURN Relay）的网络应在 `VITE_ICE_SERVERS` 中填写自己的 ICE 服务器 JSON 数组并重新构建；配置会提供给客户端，Docker 构建可传入同名 `--build-arg`。
+
+浏览器设置、昵称、标识符（Identifier）和房间密码使用独立的 `webshare-*` 存储键（Storage Key）。
+
+## 来源与许可证（Credits and License）
+
+WebShare 最初使用 [WatchParty](https://github.com/howardchung/watchparty) 的代码。原始版权声明和 MIT 许可证保留在 [LICENSE](LICENSE) 中。可选虚拟浏览器仍依赖第三方镜像（Image）。

@@ -9,9 +9,6 @@ const sshKeys = config.HETZNER_SSH_KEYS.split(",").map(Number);
 
 export class Hetzner extends VMManager {
   size = "cx33";
-  // keep existing server pools of cpx11 (US), disable deletion to keep pricing
-  // add new HetznerEU as default free pool using cx33
-  // premium pool updated to cpx32 (available in EU), legacy US servers use cpx31
   largeSize = "cpx32";
   largeSizeUS = "cpx31";
   minRetries = 5;
@@ -222,7 +219,7 @@ export class Hetzner extends VMManager {
         image: "docker-ce", // 15512617 for Ubuntu 20.04
         ssh_keys: sshKeys,
         user_data: fs
-          .readFileSync(import.meta.dirname + "/../../dev/vbrowser.sh")
+          .readFileSync(import.meta.dirname + "/bootstrap/vbrowser.sh")
           .toString()
           .replace("{VBROWSER_ADMIN_KEY}", config.VBROWSER_ADMIN_KEY),
         location: this.getRandomDatacenter(),

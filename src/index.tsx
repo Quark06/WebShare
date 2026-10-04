@@ -31,13 +31,7 @@ if (firebaseConfig) {
   firebase.initializeApp(JSON.parse(firebaseConfig));
 }
 
-// Redirect old-style URLs
-if (window.location.hash && window.location.pathname === "/") {
-  const hashRoomId = window.location.hash.substring(1);
-  window.location.href = "/watch/" + hashRoomId;
-}
-
-class WatchParty extends React.Component {
+class WebShare extends React.Component {
   public state = DEFAULT_STATE;
   async componentDidMount() {
     if (firebaseConfig) {
@@ -52,6 +46,7 @@ class WatchParty extends React.Component {
           const data = await response.json();
           this.setState({
             isSubscriber: data.isSubscriber,
+            subscriptionsEnabled: Boolean(data.subscriptionsEnabled),
             streamPath: data.streamPath,
             convertPath: data.convertPath,
             beta: data.beta,
@@ -139,4 +134,4 @@ class WatchParty extends React.Component {
 }
 const container = document.getElementById("root");
 const root = createRoot(container!);
-root.render(<WatchParty />);
+root.render(<WebShare />);

@@ -160,7 +160,7 @@ app.get("/downloadSubtitles", async (req, res) => {
       url: "https://api.opensubtitles.com/api/v1/download",
       method: "POST",
       headers: {
-        "User-Agent": "watchparty v1",
+        "User-Agent": "WebShare/0.1",
         "Api-Key": config.OPENSUBTITLES_KEY,
         Accept: "application/json",
         "Content-Type": "application/json",
@@ -236,7 +236,7 @@ app.get("/searchSubtitles", async (req, res) => {
     // Up to 10 downloads per IP per day, but proxyable and doesn't require key
     const response = await axios.get(subUrl, {
       headers: {
-        "User-Agent": "watchparty v1",
+        "User-Agent": "WebShare/0.1",
         "Api-Key": config.OPENSUBTITLES_KEY,
       },
     });
@@ -444,16 +444,17 @@ app.post("/createRoom", async (req, res) => {
 });
 
 app.post("/checkoutSub", async (req, res) => {
+  if (!config.STRIPE_SECRET_KEY || !config.STRIPE_PRICE_ID) {
+    res.status(503).json({ error: "Subscriptions are not configured" });
+    return;
+  }
   const session = await stripe.checkout.sessions.create({
     mode: "subscription",
     client_reference_id: req.body.uid,
     customer_email: req.body.email ?? undefined,
     line_items: [
       {
-        price:
-          config.NODE_ENV === "development"
-            ? "price_HNGtabCzD5qyfd"
-            : "price_HNDBoPDI7yYRi9",
+        price: config.STRIPE_PRICE_ID,
         quantity: 1,
       },
     ],
@@ -542,6 +543,7 @@ app.get("/metadata", async (req, res) => {
     );
   }
   res.json({
+    subscriptionsEnabled: Boolean(config.STRIPE_SECRET_KEY && config.STRIPE_PRICE_ID),
     isSubscriber,
     isFreePoolFull,
     beta,

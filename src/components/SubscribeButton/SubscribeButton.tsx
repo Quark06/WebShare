@@ -6,9 +6,9 @@ import { MetadataContext } from "../../MetadataContext";
 import { IconStarFilled, IconTool } from "@tabler/icons-react";
 
 export const SubscribeButton = () => {
-  const { isSubscriber } = useContext(MetadataContext);
+  const { isSubscriber, subscriptionsEnabled } = useContext(MetadataContext);
   const [isSubscribeModalOpen, setIsSubscribeModalOpen] = useState(false);
-  if (isSubscriber === undefined || isSubscriber) {
+  if (!subscriptionsEnabled || isSubscriber === undefined || isSubscriber) {
     return null;
   }
   return (

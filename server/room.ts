@@ -282,9 +282,6 @@ export class Room {
         this.setTimestamp(socket, Number(data)),
       );
       socket.on("CMD:chat", (data: unknown) =>
-        this.sendChatMessage(socket, String(data)),
-      );
-      socket.on("CMD:chatV2", (data: unknown) =>
         this.sendChatMessage(socket, data),
       );
       socket.on("CMD:addReaction", (data: unknown) =>
@@ -836,14 +833,12 @@ export class Room {
   };
 
   private sendChatMessage = (socket: Socket, raw: unknown) => {
-    // Support legacy string and V2 object chat payloads.
-    const payload = typeof raw === "string" ? { msg: raw } : raw;
-    if (!payload || typeof payload !== "object") {
+    if (!raw || typeof raw !== "object") {
       return;
     }
 
     // Validate supported fields.
-    const data = payload as Record<string, unknown>;
+    const data = raw as Record<string, unknown>;
     const msg = typeof data.msg === "string" ? data.msg : undefined;
     const replyToId =
       typeof data.replyToId === "string" ? data.replyToId : undefined;

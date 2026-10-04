@@ -24,9 +24,9 @@ export const FileShareModal = (props: {
         <Table.Thead>
           <Table.Tr>
             <Table.Th />
-            <Table.Th>WatchParty Free</Table.Th>
-            <Table.Th>WatchParty Plus (Relay)</Table.Th>
-            <Table.Th>WatchParty Plus (Convert)</Table.Th>
+            <Table.Th>WebShare Free</Table.Th>
+            <Table.Th>WebShare Plus (Relay)</Table.Th>
+            <Table.Th>WebShare Plus (Convert)</Table.Th>
           </Table.Tr>
         </Table.Thead>
 

@@ -7,12 +7,8 @@
 - Reused room play, pause, seek and automatic queue advancement for music, with playback-position recovery after source resolution.
 - Added optional server-side music platform cookies and shared metadata, source and lyric caches.
 
-## April 2023
-
-- Added support for looping the same video
-- Player now shows the buffered/downloaded ranges of video available
-- Added a 3x speed playback option
-- HLS/m3u8 live vs. non-live streams are now handled properly
-- Improved HLS playback experience on Safari and Android Chrome
-- Pasting Reddit links with video media is now supported
-- Twitch links (streams and VODs) are now supported
+- Added Bilibili video search, direct video playback and live stream resolution.
+- Added Simplified Chinese documentation and a Linux deployment guide.
+- Replaced destructive deployment commands with fast-forward updates and a single PM2 application.
+- Established WebShare branding and removed upstream accounts, analytics, announcements and deployment presets.
+- Adopted independent webshare-* browser storage, a single object chat protocol and current room routes.

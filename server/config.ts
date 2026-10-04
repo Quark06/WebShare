@@ -20,6 +20,7 @@ const defaults = {
   FIREBASE_ADMIN_SDK_CONFIG: "", // Optional, for features requiring sign-in/authentication
   FIREBASE_DATABASE_URL: "", // Optional (unused)
   STRIPE_SECRET_KEY: "", // Optional, for subscriptions
+  STRIPE_PRICE_ID: "", // Optional, your own Stripe subscription price
   VBROWSER_SESSION_SECONDS: 10800, // Number of seconds to allow vbrowsers to run for
   VBROWSER_SESSION_SECONDS_LARGE: 86400, // Number of seconds to allow large vbrowsers to run for
   VM_POOL_RAMP_DOWN_HOURS: "", // Comma separated start/end UTC hours of the ramp down period
@@ -54,15 +55,18 @@ const defaults = {
   ROOM_CAPACITY_SUB: 0, // Maximum capacity of a sub room. Set to 0 for unlimited.
   BUILD_DIRECTORY: "build", // Name of the directory where the built React UI is served from
   VM_MIN_UPTIME_MINUTES: 0, // Number of minutes of the hour VMs must exist for before being eligible for termination
-  SHARD: undefined, // Shard ID of the web server (configure in ecosystem.config.js)
+  SHARD: undefined, // Optional, shard ID; omit for a single server
+  SHARD_COUNT: 1, // Total web server shards when SHARD is set
   FREE_ROOM_LIMIT: 1, // The maximum number of rooms a free user can have
   SUBSCRIBER_ROOM_LIMIT: 20, // The maximum number of rooms a subscriber can have
   VMWORKER_PORT: 3100, // Port to use for the vmWorker HTTP server
   VM_ASSIGNMENT_TIMEOUT: 75, // Number of seconds to wait for a VM before failing
-  DISCORD_BOT_TOKEN: "", // Token for the Discord bot that generates WatchParty links
+  DISCORD_BOT_TOKEN: "", // Optional, your own bot that generates WebShare links
+  DISCORD_SITE_URL: "", // Public WebShare origin for generated room links
+  DISCORD_API_URL: "", // WebShare API origin; defaults to DISCORD_SITE_URL
   DISCORD_ADMIN_BOT_TOKEN: "", // Optional, for Discord bot to set subscriber roles
-  DISCORD_ADMIN_BOT_SERVER_ID: "708181150220156929", // Optional, ID of the Discord server
-  DISCORD_ADMIN_BOT_SUB_ROLE_ID: "722202622345609246", // Optional, ID of subscriber role
+  DISCORD_ADMIN_BOT_SERVER_ID: "", // Optional, your own Discord server ID
+  DISCORD_ADMIN_BOT_SUB_ROLE_ID: "", // Optional, your own subscriber role ID
   MEDIASOUP_SERVER: "", // Optional, URL of the MediaSoup server to broadcast to for larger screen/file shares
   TWITCH_PROXY_PATH: "", // Optional, URL of the server that can proxy twitch HLS stream playlists and segments
   VBROWSER_ADMIN_KEY: "", // Optional, the key to hit admin endpoints on the vbrowser

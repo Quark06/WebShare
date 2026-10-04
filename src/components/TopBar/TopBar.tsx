@@ -6,13 +6,11 @@ import "firebase/compat/auth";
 import { LoginModal } from "../Modal/LoginModal";
 import { SubscribeButton } from "../SubscribeButton/SubscribeButton";
 import { ProfileModal } from "../Modal/ProfileModal";
-import Announce from "../Announce/Announce";
 import { InviteButton } from "../InviteButton/InviteButton";
 import appStyles from "../App/App.module.css";
 import { MetadataContext } from "../../MetadataContext";
 import config from "../../config";
 import {
-  IconBrandDiscord,
   IconBrandFacebookFilled,
   IconBrandGithub,
   IconBrandGoogleFilled,
@@ -84,6 +82,9 @@ export class SignInButton extends React.Component<SignInButtonProps> {
   }
 
   render() {
+    if (!config.VITE_FIREBASE_CONFIG) {
+      return null;
+    }
     if (this.context.user) {
       return (
         <div
@@ -240,41 +241,7 @@ export const TopBar = (props: {
         }}
       >
         <a href="/" style={{ display: "flex" }}>
-          <img style={{ width: "56px", height: "56px" }} src="/logo192.png" />
-          {/* <div
-              style={{
-                height: '48px',
-                width: '48px',
-                marginRight: '10px',
-                borderRadius: '50%',
-                position: 'relative',
-                backgroundColor: '#' + colorMappings.blue,
-              }}
-            >
-              <Icon
-                inverted
-                name="film"
-                size="large"
-                style={{
-                  position: 'absolute',
-                  top: 8,
-                  width: '100%',
-                  margin: '0 auto',
-                }}
-              />
-              <Icon
-                inverted
-                name="group"
-                size="large"
-                color="green"
-                style={{
-                  position: 'absolute',
-                  bottom: 8,
-                  width: '100%',
-                  margin: '0 auto',
-                }}
-              />
-            </div> */}
+          <img style={{ width: "56px", height: "56px" }} src="/logo.svg" alt="WebShare" />
         </a>
         {props.roomTitle || props.roomDescription ? (
           <div
@@ -319,7 +286,7 @@ export const TopBar = (props: {
                     lineHeight: "30px",
                   }}
                 >
-                  Watch
+                  Web
                 </div>
                 <div
                   style={{
@@ -331,13 +298,12 @@ export const TopBar = (props: {
                     marginLeft: "auto",
                   }}
                 >
-                  Party
+                  Share
                 </div>
               </div>
             </a>
           </React.Fragment>
         )}
-        <Announce />
         <div
           className={appStyles.mobileStack}
           style={{
@@ -359,18 +325,7 @@ export const TopBar = (props: {
               component="a"
               color="gray"
               size="lg"
-              href="https://discord.gg/3rYj5HV"
-              target="_blank"
-              rel="noopener noreferrer"
-              title="Discord"
-            >
-              <IconBrandDiscord />
-            </ActionIcon>
-            <ActionIcon
-              component="a"
-              color="gray"
-              size="lg"
-              href="https://github.com/howardchung/watchparty"
+              href="https://github.com/Quark06/WebShare"
               target="_blank"
               rel="noopener noreferrer"
               title="GitHub"

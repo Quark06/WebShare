@@ -2,9 +2,7 @@
 
 [English](README.md) | [简体中文](README.zh-CN.md)
 
-![screenshot](https://github.com/howardchung/watchparty/raw/master/public/screenshot_full.png)
-
-A website for watching videos and listening to music together, based on [WatchParty](https://github.com/howardchung/watchparty).
+WebShare is a self-hosted website for synchronized video watching, Bilibili live streams, music and chat.
 
 ## Description
 
@@ -12,7 +10,7 @@ A website for watching videos and listening to music together, based on [WatchPa
 - Plays, pauses, and seeks are synced to all watchers
 - Supports:
   - Screen sharing (full screen, browser tab or application)
-  - Launch a shared virtual browser in the cloud (similar to rabb.it)
+  - Launch a shared virtual browser with a separately configured service
   - Stream-your-own-file
   - Video files on the Internet (anything accessible via HTTP)
   - YouTube videos
@@ -30,7 +28,7 @@ A website for watching videos and listening to music together, based on [WatchPa
 - Use Node.js 24 or newer.
 - Clone this repo via `git clone git@github.com:Quark06/WebShare.git` and enter the `WebShare` directory.
 - Duplicate `.env.example` as `.env` and add config for the features you want as described in the advanced setup.
-- Install npm dependencies for the project via `npm ci`
+- Install npm dependencies for the project via `npm ci --include=dev`
 - Start the server via `npm run dev`
   - Defaults to port 8080, customize with `PORT` env var
   - Set `SSL_KEY_FILE` and `SSL_CRT_FILE` for HTTPS.
@@ -43,7 +41,7 @@ For a production build, run `npm run build`, then start the server with `NODE_EN
 
 ## Server deployment
 
-See the [server deployment guide (简体中文)](docs/DEPLOYMENT.zh-CN.md) for Linux/PM2, Nginx/HTTPS, Docker, updates, deployment audit findings and functional acceptance checks.
+See the [server deployment guide (简体中文)](docs/DEPLOYMENT.zh-CN.md) for Linux/PM2, Nginx/HTTPS, Docker, updates, runtime configuration and functional acceptance checks.
 
 Use `npm run pm2` for the single production `webshare` process. On an existing server, `npm run deploy` requires a clean `master` branch, pulls with fast-forward only, installs dependencies, builds and type-checks, then starts or restarts only `webshare`. GitHub Actions currently checks builds; it does not deploy to your server.
 
@@ -100,6 +98,8 @@ Anonymous playback may return a preview or no URL. If needed, configure your own
 
 ### Firebase Config (user authentication)
 
+Login is disabled by default. Use your own Firebase project; no upstream account or analytics service is configured.
+
 This project uses Firebase for authentication. This is used for user login, account management, subscriptions, and handling some features like room locking/permanence.
 
 To set up, create a new Firebase app (or reuse an old one) from [here](https://console.firebase.google.com/). After creating an application, click on the settings cog icon in the left menu next to "Project overview" and click on project settings. From there, scroll down, create a web application and copy the Firebase SDK configuration snippet JSON data.
@@ -120,7 +120,7 @@ This project supports creating virtual browsers (using https://github.com/m1k1o/
 
 ### Room Persistence
 
-- Configure Postgres by adding DATABASE_URL to your .env file and then setting up the database schema
+- Configure PostgreSQL with `DATABASE_URL` in `.env` and initialize a new database using [sql/schema.sql](sql/schema.sql).
 - This allows rooms to persist between server restarts
 
 ## Tech
@@ -131,3 +131,17 @@ This project supports creating virtual browsers (using https://github.com/m1k1o/
 - Redis
 - PostgreSQL
 - Docker
+
+## Optional integrations
+
+Discord account linking requires your own `VITE_DISCORD_CLIENT_ID`; redirects default to the current site origin. To run your own room-creation bot, set `DISCORD_BOT_TOKEN` and `DISCORD_SITE_URL`, optionally `DISCORD_API_URL`, then run `node server/discordBot.ts`.
+
+Subscriptions are disabled unless both `STRIPE_SECRET_KEY` and your own `STRIPE_PRICE_ID` are configured. Prices are displayed by your Stripe checkout. Optional workers and virtual browser infrastructure must be configured separately.
+
+Screen/file sharing and video chat use a public STUN server by default. For networks that require a TURN relay, configure your own `VITE_ICE_SERVERS` JSON array and rebuild. These settings are visible to clients. Docker builds accept the same `--build-arg`.
+
+Browser settings, names, identifiers and saved room passwords use WebShare's own `webshare-*` storage keys.
+
+## Credits and license
+
+WebShare began from [WatchParty](https://github.com/howardchung/watchparty). The original copyright and MIT license are retained in [LICENSE](LICENSE). Third-party virtual browser images remain dependencies of the optional VBrowser integration.

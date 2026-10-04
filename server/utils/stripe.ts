@@ -17,8 +17,8 @@ export async function getCustomerByEmail(email: string) {
 }
 
 export async function getIsSubscriberByEmail(email: string | undefined) {
-  if (!config.STRIPE_SECRET_KEY) {
-    // If Stripe isn't set up assume everyone is a subscriber
+  if (!config.STRIPE_SECRET_KEY || !config.STRIPE_PRICE_ID) {
+    // Without configured subscriptions, allow the optional feature set.
     return true;
   }
   if (!email) {

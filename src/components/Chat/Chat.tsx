@@ -133,18 +133,13 @@ export class Chat extends React.Component<ChatProps> {
     if (this.chatTooLong()) {
       return;
     }
-    if (this.state.replyTo?.id && this.state.replyTo.timestamp) {
-      const chatPayload: ChatPayload = {
-        msg: this.state.chatMsg,
-        replyToId: this.state.replyTo.id,
-        replyToTimestamp: this.state.replyTo.timestamp,
-      };
-      this.props.socket.emit("CMD:chatV2", chatPayload);
-      this.setState({ chatMsg: "", replyTo: undefined });
-      return;
+    const chatPayload: ChatPayload = { msg: this.state.chatMsg };
+    if (this.state.replyTo) {
+      chatPayload.replyToId = this.state.replyTo.id;
+      chatPayload.replyToTimestamp = this.state.replyTo.timestamp;
     }
+    this.props.socket.emit("CMD:chat", chatPayload);
     this.setState({ chatMsg: "", replyTo: undefined });
-    this.props.socket.emit("CMD:chat", this.state.chatMsg);
   };
 
   setReplyTo = (id: string, timestamp: string, msg?: string) => {
@@ -491,7 +486,7 @@ const ChatMessage = ({
             trigger={
               <div
                 style={{ cursor: "pointer", fontWeight: 700 }}
-                title={isSub ? "WatchParty Plus subscriber" : ""}
+                title={isSub ? "WebShare Plus subscriber" : ""}
                 className={`${isSub ? styles.subscriber : styles.light} ${styles.hoverEffect}`}
               >
                 {Boolean(system) && "System"}

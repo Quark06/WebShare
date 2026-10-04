@@ -3,10 +3,11 @@ import config from "./config.ts";
 import axios from "axios";
 import { redisCount } from "./utils/redis.ts";
 
-// URL to invite bot: https://discord.com/api/oauth2/authorize?client_id=1071394728513380372&permissions=2147485696&scope=bot
-
-const HOST_NAME = "https://www.watchparty.me";
-const API_NAME = "https://backend.watchparty.me";
+const HOST_NAME = config.DISCORD_SITE_URL.replace(/\/$/, "");
+if (!HOST_NAME || !config.DISCORD_BOT_TOKEN) {
+  throw new Error("Set DISCORD_SITE_URL and DISCORD_BOT_TOKEN to run your WebShare bot.");
+}
+const API_NAME = (config.DISCORD_API_URL || HOST_NAME).replace(/\/$/, "");
 
 const client = new Client({
   intents: [IntentsBitField.Flags.Guilds, IntentsBitField.Flags.GuildMessages],
@@ -22,14 +23,14 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
   if (interaction.commandName === "watch") {
     const preload = interaction.options.get("video")?.value;
-    // Call the watchparty API to make a room
+    // Call the WebShare API to make a room
     const response = await axios.post(API_NAME + "/createRoom", {
       video: preload,
     });
     redisCount("discordBotWatch");
     // Return the generated room URL
     await interaction.reply({
-      content: `Created a new WatchParty${
+      content: `Created a new WebShare${
         preload ? ` with video ${preload}` : ""
       }!
 ${HOST_NAME + "/watch" + response.data.name}

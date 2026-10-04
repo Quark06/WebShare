@@ -11,7 +11,7 @@ export const Footer = () => (
       color: softWhite,
     }}
   >
-    <Link to="/terms">Terms</Link>
+    <Link to="/terms">Usage</Link>
     {" · "}
     <Link to="/privacy">Privacy</Link>
     {" · "}

@@ -60,7 +60,7 @@ export class VideoChat extends React.Component<VideoChatProps> {
     // Handle messages received from signaling server
     const msg = data.msg;
     const from = data.from;
-    let pc = window.watchparty.videoPCs[from];
+    let pc = window.webshare.videoPCs[from];
     if (!pc) {
       return;
     }
@@ -71,9 +71,9 @@ export class VideoChat extends React.Component<VideoChatProps> {
       // If our PC is stale, replace it with a fresh one before handling the offer
       if (pc.connectionState === "failed" || pc.connectionState === "closed") {
         pc.close();
-        delete window.watchparty.videoPCs[from];
+        delete window.webshare.videoPCs[from];
         this.updateWebRTC();
-        pc = window.watchparty.videoPCs[from];
+        pc = window.webshare.videoPCs[from];
         if (!pc) {
           return;
         }
@@ -118,20 +118,20 @@ export class VideoChat extends React.Component<VideoChatProps> {
         console.warn(e);
       }
     }
-    window.watchparty.ourStream = stream;
+    window.webshare.ourStream = stream;
     // alert server we've joined video chat
     this.socket.emit("CMD:joinVideo");
     this.emitUserMute();
   };
 
   stopWebRTC = () => {
-    const ourStream = window.watchparty.ourStream;
-    const videoPCs = window.watchparty.videoPCs;
+    const ourStream = window.webshare.ourStream;
+    const videoPCs = window.webshare.videoPCs;
     ourStream &&
       ourStream.getTracks().forEach((track) => {
         track.stop();
       });
-    window.watchparty.ourStream = undefined;
+    window.webshare.ourStream = undefined;
     Object.keys(videoPCs).forEach((key) => {
       videoPCs[key].close();
       delete videoPCs[key];
@@ -140,7 +140,7 @@ export class VideoChat extends React.Component<VideoChatProps> {
   };
 
   toggleVideoWebRTC = () => {
-    const ourStream = window.watchparty.ourStream;
+    const ourStream = window.webshare.ourStream;
     if (ourStream && ourStream.getVideoTracks()[0]) {
       ourStream.getVideoTracks()[0].enabled =
         !ourStream.getVideoTracks()[0]?.enabled;
@@ -149,12 +149,12 @@ export class VideoChat extends React.Component<VideoChatProps> {
   };
 
   getVideoWebRTC = () => {
-    const ourStream = window.watchparty.ourStream;
+    const ourStream = window.webshare.ourStream;
     return ourStream && ourStream.getVideoTracks()[0]?.enabled;
   };
 
   toggleAudioWebRTC = () => {
-    const ourStream = window.watchparty.ourStream;
+    const ourStream = window.webshare.ourStream;
     if (ourStream && ourStream.getAudioTracks()[0]) {
       ourStream.getAudioTracks()[0].enabled =
         !ourStream.getAudioTracks()[0]?.enabled;
@@ -164,7 +164,7 @@ export class VideoChat extends React.Component<VideoChatProps> {
   };
 
   getAudioWebRTC = () => {
-    const ourStream = window.watchparty.ourStream;
+    const ourStream = window.webshare.ourStream;
     return (
       ourStream &&
       ourStream.getAudioTracks()[0] &&
@@ -173,9 +173,9 @@ export class VideoChat extends React.Component<VideoChatProps> {
   };
 
   updateWebRTC = () => {
-    const ourStream = window.watchparty.ourStream;
-    const videoPCs = window.watchparty.videoPCs;
-    const videoRefs = window.watchparty.videoRefs;
+    const ourStream = window.webshare.ourStream;
+    const videoPCs = window.webshare.videoPCs;
+    const videoRefs = window.webshare.videoRefs;
     if (!ourStream) {
       // We haven't started video chat, exit
       return;
@@ -253,8 +253,8 @@ export class VideoChat extends React.Component<VideoChatProps> {
   render() {
     const { participants, pictureMap, nameMap, tsMap, socket, owner } =
       this.props;
-    const ourStream = window.watchparty.ourStream;
-    const videoRefs = window.watchparty.videoRefs;
+    const ourStream = window.webshare.ourStream;
+    const videoRefs = window.webshare.videoRefs;
     const videoChatSize = participants.length > 2 ? 180 : 250;
     const videoChatContentStyle: React.CSSProperties = {
       height: videoChatSize,

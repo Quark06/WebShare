@@ -3,7 +3,7 @@ import { postgres } from "./postgres.ts";
 import os from "node:os";
 import { getRedisCountDay, getRedisCountDayDistinct, redis } from "./redis.ts";
 import config from "../config.ts";
-import { apps } from "../ecosystem.config.js";
+import { getShardIds } from "./resolveShard.ts";
 
 export async function getStats() {
   const now = Date.now();
@@ -12,9 +12,7 @@ export async function getStats() {
 
   // Render each shard metrics as its own object
   const shardMetrics: Record<string, ShardMetric> = {};
-  const shardKeys = new Set(
-    apps.map((app) => `shardMetrics:${app.env?.SHARD ?? 0}`),
-  );
+  const shardKeys = getShardIds().map((id) => `shardMetrics:${id}`);
   for (let key of shardKeys) {
     const resp2 = await redis?.get(key);
     if (resp2) {

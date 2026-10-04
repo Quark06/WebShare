@@ -81,7 +81,7 @@ declare global {
   interface Window {
     onYouTubeIframeAPIReady: any;
     YT: YT.JsApi;
-    watchparty: {
+    webshare: {
       ourStream: MediaStream | undefined;
       videoRefs: HTMLVideoElementDict;
       videoPCs: PCDict;
@@ -92,7 +92,7 @@ declare global {
   }
 }
 
-window.watchparty = {
+window.webshare = {
   ourStream: undefined,
   videoRefs: {},
   videoPCs: {},
@@ -194,7 +194,7 @@ export class App extends React.Component<AppProps, AppState> {
     tsMap: {},
     nameMap: {},
     pictureMap: {},
-    myName: window.localStorage.getItem("watchparty-username") ?? "",
+    myName: window.localStorage.getItem("webshare-username") ?? "",
     myPicture: "",
     loading: true,
     scrollTimestamp: 0,
@@ -236,15 +236,10 @@ export class App extends React.Component<AppProps, AppState> {
       ? true
       : Boolean(
           Number(
-            window.localStorage.getItem("watchparty-showchatcolumn") ?? "1",
+            window.localStorage.getItem("webshare-showchatcolumn") ?? "1",
           ),
         ),
     showPeopleColumn: false,
-    // Boolean(
-    //       Number(
-    //         window.localStorage.getItem('watchparty-showpeoplecolumn') ?? '0',
-    //       ),
-    //     ),
     owner: undefined,
     vanity: undefined,
     password: undefined,
@@ -366,7 +361,7 @@ export class App extends React.Component<AppProps, AppState> {
       this.updateName(this.state.myName || (await generateName()));
       this.loadSignInData(this.context.user);
       // Re-join video chat if we were in it before the reconnection
-      if (window.watchparty.ourStream) {
+      if (window.webshare.ourStream) {
         socket.emit("CMD:joinVideo");
       }
     });
@@ -486,9 +481,9 @@ export class App extends React.Component<AppProps, AppState> {
           if (loadRevision !== this.mediaLoadRevision) return;
           const leftVideo = this.HTMLInterface.getVideoEl();
           if (changingResolvedMedia) {
-            window.watchparty.dash?.reset();
-            window.watchparty.dash = undefined;
-            window.watchparty.hls?.detachMedia();
+            window.webshare.dash?.reset();
+            window.webshare.dash = undefined;
+            window.webshare.hls?.detachMedia();
           }
 
           // Stop all players
@@ -567,15 +562,15 @@ export class App extends React.Component<AppProps, AppState> {
           }
           if (isMagnet(src)) {
             // WebTorrent
-            if (!window.watchparty.webtorrent) {
+            if (!window.webshare.webtorrent) {
               const WebTorrent = //@ts-expect-error
                 (await import("webtorrent/dist/webtorrent.min.js")).default;
-              window.watchparty.webtorrent = new WebTorrent();
+              window.webshare.webtorrent = new WebTorrent();
               const reg = await navigator.serviceWorker?.register("/sw.min.js");
               const worker = reg.active || reg.waiting || reg.installing;
               const checkState = (worker: ServiceWorker | null) => {
                 if (worker?.state === "activated") {
-                  return window.watchparty.webtorrent?.createServer({
+                  return window.webshare.webtorrent?.createServer({
                     controller: reg,
                   });
                 }
@@ -617,9 +612,9 @@ export class App extends React.Component<AppProps, AppState> {
                 }
                 resolve(undefined);
               };
-              let target = await window.watchparty.webtorrent?.get(src);
+              let target = await window.webshare.webtorrent?.get(src);
               if (!target) {
-                target = window.watchparty.webtorrent?.add(src, {
+                target = window.webshare.webtorrent?.add(src, {
                   announce: [
                     "wss://tracker.btorrent.xyz",
                     "wss://tracker.openwebtorrent.com",
@@ -641,11 +636,11 @@ export class App extends React.Component<AppProps, AppState> {
               }
             });
           } else if (isDash(src)) {
-            if (!window.watchparty.dash) {
+            if (!window.webshare.dash) {
               const Dash = await import("dashjs");
               if (loadRevision !== this.mediaLoadRevision) return;
-              window.watchparty.dash = Dash.MediaPlayer().create();
-              window.watchparty.dash.on("streamInitialized", (_e: any) => {
+              window.webshare.dash = Dash.MediaPlayer().create();
+              window.webshare.dash.on("streamInitialized", (_e: any) => {
                 // for a live stream:
                 // html.currenttime is time since stream start
                 // html.duration is infinite
@@ -657,22 +652,22 @@ export class App extends React.Component<AppProps, AppState> {
                 });
               });
             }
-            window.watchparty.dash.initialize(leftVideo, src);
+            window.webshare.dash.initialize(leftVideo, src);
           } else if (isHls(src) && window.MediaSource) {
             // Prefer using hls.js if MediaSource Extensions are supported
             // otherwise fallback to native HLS support using video tag (i.e. iPhones)
-            if (!window.watchparty.hls) {
+            if (!window.webshare.hls) {
               const Hls = (await import("hls.js")).default;
               if (loadRevision !== this.mediaLoadRevision) return;
-              window.watchparty.hls = new Hls();
-              window.watchparty.hls.on(Hls.Events.LEVEL_LOADED, (_, data) => {
+              window.webshare.hls = new Hls();
+              window.webshare.hls.on(Hls.Events.LEVEL_LOADED, (_, data) => {
                 const isLiveStream = data.details.live;
                 this.setState({ isLiveStream });
                 console.log("HLS level loaded: isLive %s", isLiveStream);
               });
             }
-            window.watchparty.hls.loadSource(src);
-            window.watchparty.hls.attachMedia(leftVideo);
+            window.webshare.hls.loadSource(src);
+            window.webshare.hls.attachMedia(leftVideo);
           }
           // else if (isMpegTs(src)) {
           //   const mpegts = (await import('mpegts.js')).default;
@@ -770,7 +765,7 @@ export class App extends React.Component<AppProps, AppState> {
           }
           if (isMagnet(currentMedia)) {
             this.progressUpdater = window.setInterval(async () => {
-              const client = window.watchparty.webtorrent;
+              const client = window.webshare.webtorrent;
               if (client) {
                 this.setState({
                   downloaded: client.torrents[0]?.downloaded,
@@ -990,10 +985,10 @@ export class App extends React.Component<AppProps, AppState> {
         // Don't update the username if the user wants to customize their own
         // Set a flag in localstorage so we only update this once, if the user changes name manually later we won't overwrite
         // Clear the flag on logout
-        if (!window.localStorage.getItem("watchparty-loginname")) {
+        if (!window.localStorage.getItem("webshare-loginname")) {
           this.updateName(firstName);
           window.localStorage.setItem(
-            "watchparty-loginname",
+            "webshare-loginname",
             Date.now().toString(),
           );
         }
@@ -1139,7 +1134,6 @@ export class App extends React.Component<AppProps, AppState> {
     }
     const uuid = createUuid();
     const convertPath = this.context.convertPath;
-    // const convertPath = 'https://azure.howardchung.net:5001';
     let convertUrl = convertPath + "/" + uuid + ".m3u8";
     convertUrl += sourceUrl ? "?url=" + encodeURIComponent(sourceUrl) : "";
     // Wait for the playlist to get generated
@@ -1977,7 +1971,7 @@ export class App extends React.Component<AppProps, AppState> {
   updateName = (name: string) => {
     this.setState({ myName: name });
     this.socket.emit("CMD:name", name);
-    window.localStorage.setItem("watchparty-username", name);
+    window.localStorage.setItem("webshare-username", name);
   };
 
   updatePicture = (url: string) => {
@@ -2733,7 +2727,7 @@ export class App extends React.Component<AppProps, AppState> {
                           showChatColumn: newVal,
                         });
                         window.localStorage.setItem(
-                          "watchparty-showchatcolumn",
+                          "webshare-showchatcolumn",
                           Number(newVal).toString(),
                         );
                       }}

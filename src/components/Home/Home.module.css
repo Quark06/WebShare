@@ -2,7 +2,6 @@
   display: flex;
   flex-direction: column;
   color: white;
-  /* background-image: linear-gradient(to bottom, #222222, #008cdd); */
 }
 
 .hero {
@@ -13,12 +12,6 @@
   border-bottom-right-radius: 50%;
   display: flex;
   justify-content: center;
-}
-
-.hero.green {
-  background-image: linear-gradient(to bottom, #222222, rgb(21, 114, 43));
-  border-bottom-left-radius: 50%;
-  border-bottom-right-radius: 0%;
 }
 
 .heroInner {

@@ -69,8 +69,6 @@ YouTube 搜索代理运行在服务器所在的网络环境中；服务器的 `1
 
 ### 2.3 构建和启动
 
-如果从旧部署迁移，先执行 `npm exec -- pm2 status` 确认旧 WebShare 应用名和监听端口。按实际名称停止本项目旧实例，例如 `npm exec -- pm2 stop <旧应用名>`，释放 8080 后再启动新入口；如果此前代理到 3001/3002，也将 Nginx 上游改为 8080。不要使用 `pm2 delete all` 处理迁移。
-
 ```bash
 npm run build
 npm run pm2
@@ -229,20 +227,22 @@ npm exec -- pm2 status
 
 如果仅修改服务端 `.env`，使用 `npm run pm2` 重启即可。如果修改 `VITE_*`，先执行 `npm run build`，再执行 `npm run pm2`。`.env` 已被 Git 忽略，不影响干净工作区检查。
 
-## 6. 现有部署流程检查结果
+## 6. 运行配置说明
 
-| 项目 | 检查结果与本次处理 |
+| 项目 | 当前行为 |
 | --- | --- |
-| `npm run deploy` | 旧流程硬编码 `origin/release`，并执行 `git reset --hard`、`pm2 flush`、`pm2 delete all`。已改为更新 `master`、检查工作区、安装及构建成功后只重启 `webshare`。 |
-| PM2 默认入口 | 旧部署入口使用 `server/ecosystem.config.js`，会启动两个分片及多个上游后台任务（Workers）。已新增根目录 `ecosystem.config.cjs`，默认只运行一个 `webshare` 生产进程。旧文件仍供源码中的高级分片相关功能使用。 |
-| Docker 运行模式 | 原 Dockerfile 未设置生产环境，且通过 Shell 间接启动 npm。已设置 `NODE_ENV=production`，并使用直接启动 Node.js 的命令。 |
-| Docker 构建上下文 | 原来缺少 `.dockerignore`，`COPY .` 会包含本机运行环境、依赖和 `.env`。已新增排除规则，并把公开的 Vite 配置改为构建参数。 |
-| 依赖安装 | 构建依赖前端开发包，部分后端导入也位于开发依赖中。原生、Docker 和持续集成（Continuous Integration，CI）流程统一使用 `npm ci --include=dev`。 |
-| GitHub Actions | 已更新 Checkout 与 Setup Node 动作（Actions），使用 Node.js 24、npm 缓存及实际构建检查。当前工作流仅做 CI，不会自动连接服务器或执行持续部署（Continuous Deployment，CD）。 |
-| 前端地址与实时连接 | 同域名生产部署可保持 `VITE_SERVER_HOST` 为空；指南补充了 Nginx WebSocket 转发，及前端变量必须在构建时设置的说明。 |
-| 本机预览 | `scripts/preview.mjs` 使用项目的 Windows Node.js 环境、记录本机进程号和日志，适合本机预览；服务器常驻运行使用本指南的 PM2 或 Docker 方式。 |
+| 更新脚本 | `npm run deploy` 要求 Node.js 24、干净的 `master` 分支；拉取代码、安装和构建成功后只启动或重启 `webshare`。 |
+| PM2 入口 | 根目录 `ecosystem.config.cjs` 默认运行一个生产进程。可选分片（Sharding）通过 `SHARD` 和 `SHARD_COUNT` 配置。 |
+| Docker | 使用 Node.js 24、完整依赖和生产环境；`.dockerignore` 排除本地依赖、构建产物及 `.env`。 |
+| 前端配置 | `VITE_*` 在构建时读取。Docker 通过构建参数（Build Arguments）传入；修改后重建。 |
+| GitHub Actions | 持续集成（Continuous Integration，CI）只检查构建，不自动部署服务器。 |
+| 本机预览 | `scripts/preview.mjs` 用于 Windows 本地预览；Linux 常驻运行使用 PM2 或 Docker。 |
 
-旧 PM2 文件中的云服务地址和镜像编号属于上游配置。若要启用虚拟浏览器、分片或相关后台任务，需要根据自己的基础设施单独配置；基础共同观看部署使用上面的单进程入口。
+若要启用虚拟浏览器、分片或后台任务，请使用自己的基础设施配置；基础共同观看部署使用上面的单进程入口。Discord 账号关联需要构建时设置 `VITE_DISCORD_CLIENT_ID`，Docker 部署可使用同名 `--build-arg`。订阅（Subscription）需要自己的 `STRIPE_SECRET_KEY` 和 `STRIPE_PRICE_ID`，默认关闭。
+
+若启用 PostgreSQL，通过 `DATABASE_URL` 连接自己的数据库，并使用 [sql/schema.sql](../sql/schema.sql) 初始化新数据库结构（Database Schema）。
+
+屏幕与文件共享、视频聊天默认只使用公共 STUN 服务。跨网络需要中继（TURN Relay）时，配置自己的 `VITE_ICE_SERVERS` JSON 数组并重建前端；Docker 可传入同名 `--build-arg`。中继会承担对应的共享媒体流量，B 站和音乐的直接播放不受此项影响。
 
 ## 7. 部署后的功能验收
 

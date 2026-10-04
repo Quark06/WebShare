@@ -1,221 +1,58 @@
-import React, { useContext } from "react";
-import { Button, Stepper } from "@mantine/core";
+import React from "react";
+import { Stepper } from "@mantine/core";
 import {
-  IconBrandDiscordFilled,
-  IconBrandYoutubeFilled,
-  IconBrowser,
-  IconFile,
-  IconLink,
-  IconList,
-  IconMessageFilled,
-  type IconProps,
-  IconRefresh,
-  IconScreenShare,
-  IconVideo,
+  IconBrandBilibili, IconBrandYoutubeFilled, IconMusic,
+  IconScreenShare, IconFile, IconLink, IconRefresh,
+  IconMessageFilled, IconList, IconVideo, type IconProps,
 } from "@tabler/icons-react";
 import { NewRoomButton } from "../TopBar/TopBar";
 import styles from "./Home.module.css";
-import { MetadataContext } from "../../MetadataContext";
 
-export const Home = () => {
-  const { user } = useContext(MetadataContext);
-  return (
-    <div>
-      <div className={styles.container}>
-        <Hero
-          heroText={"Watch videos together with friends anywhere."}
-          subText={"No registration or download required."}
-          action={
-            <div style={{ marginTop: "8px", width: "300px" }}>
-              <NewRoomButton size="xl" />
-            </div>
-          }
-          image={"/screenshot4.png"}
-        />
-        <div className={styles.featureSection}>
-          <Feature
-            Icon={IconBrowser}
-            title={`VBrowser`}
-            text="Watch together on a virtual browser running in the cloud."
-          />
-          <Feature
-            Icon={IconBrandYoutubeFilled}
-            title={`YouTube`}
-            text="Watch videos together from YouTube."
-          />
-          <Feature
-            Icon={IconScreenShare}
-            title={`Screensharing`}
-            text="Share a browser tab or your desktop."
-          />
-          <Feature
-            Icon={IconFile}
-            title={`File`}
-            text="Upload and stream your own file."
-          />
-          <Feature
-            Icon={IconLink}
-            title={`URL`}
-            text="Paste in a video URL for everyone to watch from."
-          />
+export const Home = () => (
+  <div className={styles.container}>
+    <div className={styles.hero}>
+      <div className={styles.heroInner}>
+        <div style={{ padding: "30px", flex: 1 }}>
+          <h1 className={styles.heroText}>Watch and listen together with WebShare.</h1>
+          <div className={styles.subText}>Share Bilibili videos and live streams, music, and YouTube with friends.</div>
+          <div className={styles.subText}>Create a room, share its link, and pick something to play.</div>
+          <div style={{ marginTop: "24px" }}><NewRoomButton size="xl" /></div>
         </div>
-
-        <Hero
-          heroText={"React to moments together."}
-          subText={"Find moments of shared joy even when you're apart."}
-          image={"/screenshot18.png"}
-          color="green"
-        />
-        <div className={styles.featureSection}>
-          <Feature
-            Icon={IconRefresh}
-            title="Synchronized Play"
-            text="Starts, stops, and seeks are synchronized to everyone, so take those restroom and snack breaks without worrying about falling behind."
-          />
-          <Feature
-            Icon={IconMessageFilled}
-            title="Chat"
-            text="Chat with others in your room. Memes and inside jokes encouraged."
-          />
-          <Feature
-            Icon={IconList}
-            title="Playlists"
-            text="Set up a whole list of videos to play next, and rearrange to your heart's content."
-          />
-          <Feature
-            Icon={IconVideo}
-            title="Video chat"
-            text="Jump into video chat if you'd rather be face-to-face."
-          />
-        </div>
-
-        <Hero
-          heroText={"Theater mode."}
-          subText={
-            "Bring video and chat front-and-center for minimal distractions."
-          }
-          image={"/screenshot14.png"}
-        />
-        <div
-          style={{
-            padding: "30px",
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-          }}
-        >
-          <div className={styles.heroText}>Get started!</div>
-          <div className={styles.featureSection}>
-            <Stepper active={-1}>
-              <Stepper.Step label="Make a room" />
-              <Stepper.Step label="Share link with friends" />
-              <Stepper.Step label="Pick something to watch" />
-              <Stepper.Step label="Success!" />
-            </Stepper>
-          </div>
-          {/* <div style={{ width: '160px' }}>
-            <NewRoomButton />
-          </div> */}
-        </div>
+        <img src="/logo.svg" alt="WebShare" width={180} height={180} style={{ margin: "30px" }} />
       </div>
-      <DiscordBot />
     </div>
-  );
-};
+    <div className={styles.featureSection}>
+      <Feature Icon={IconBrandBilibili} title="Bilibili" text="Search videos or paste a video or live room link." />
+      <Feature Icon={IconMusic} title="Music" text="Search songs, import playlists, and follow synchronized lyrics." />
+      <Feature Icon={IconBrandYoutubeFilled} title="YouTube" text="Search and watch YouTube videos together." />
+      <Feature Icon={IconLink} title="Video links" text="Play a direct video URL or HLS stream." />
+      <Feature Icon={IconScreenShare} title="Screen sharing" text="Share a browser tab or your desktop." />
+      <Feature Icon={IconFile} title="Local files" text="Share a file from your computer with the room." />
+    </div>
+    <div className={styles.featureSection}>
+      <Feature Icon={IconRefresh} title="Synchronized play" text="Play, pause and seek together." />
+      <Feature Icon={IconMessageFilled} title="Chat" text="React to shared moments in room chat." />
+      <Feature Icon={IconList} title="Playlists" text="Queue videos and songs without interrupting playback." />
+      <Feature Icon={IconVideo} title="Video chat" text="Talk face-to-face while watching together." />
+    </div>
+    <div style={{ padding: "30px", display: "flex", flexDirection: "column", alignItems: "center" }}>
+      <Stepper active={-1}>
+        <Stepper.Step label="Create a room" />
+        <Stepper.Step label="Share its link" />
+        <Stepper.Step label="Watch or listen together" />
+      </Stepper>
+    </div>
+  </div>
+);
 
-const Feature = ({
-  Icon,
-  text,
-  title,
-}: {
+const Feature = ({ Icon, title, text }: {
   Icon: React.ForwardRefExoticComponent<IconProps>;
-  text: string;
   title: string;
-}) => {
-  return (
-    <div
-      style={{
-        display: "flex",
-        flex: "1 1 0px",
-        flexDirection: "column",
-        alignItems: "center",
-        padding: "10px",
-        minWidth: "180px",
-      }}
-    >
-      <Icon size={80} />
-      <h4 className={styles.featureTitle}>{title}</h4>
-      <div className={styles.featureText}>{text}</div>
-    </div>
-  );
-};
-
-export const Hero = ({
-  heroText,
-  subText,
-  subText2,
-  action,
-  image,
-  color,
-}: {
-  heroText?: string;
-  subText?: string;
-  subText2?: string;
-  action?: React.ReactNode;
-  image?: string;
-  color?: string;
-}) => {
-  return (
-    <div className={`${styles.hero} ${color === "green" ? styles.green : ""}`}>
-      <div
-        style={{ flexDirection: color === "green" ? "row-reverse" : undefined }}
-        className={styles.heroInner}
-      >
-        <div style={{ padding: "30px", flex: "1 1 0" }}>
-          <div className={styles.heroText}>{heroText}</div>
-          <div className={styles.subText}>{subText}</div>
-          <div className={styles.subText}>{subText2}</div>
-          {action}
-        </div>
-        <div
-          style={{
-            flex: "1 1 0",
-          }}
-        >
-          <img
-            alt="hero"
-            style={{ width: "100%", borderRadius: "10px" }}
-            src={image}
-          />
-        </div>
-      </div>
-    </div>
-  );
-};
-
-export const DiscordBot = () => {
-  return (
-    <div>
-      <Hero
-        color="green"
-        heroText={
-          "Add the WatchParty Discord bot to your server to easily generate WatchParty links."
-        }
-        subText={"/watch to generate a new empty room"}
-        subText2={"/watch video <URL_HERE> to create a room with a video"}
-        action={
-          <Button
-            leftSection={<IconBrandDiscordFilled />}
-            component="a"
-            size="lg"
-            target="_blank"
-            href="https://discord.com/api/oauth2/authorize?client_id=1071394728513380372&permissions=2147485696&scope=bot"
-          >
-            Add to Discord
-          </Button>
-        }
-        image={"/screenshot5.png"}
-      />
-    </div>
-  );
-};
+  text: string;
+}) => (
+  <div style={{ display: "flex", flex: "1 1 0px", flexDirection: "column", alignItems: "center", padding: "20px", minWidth: "180px" }}>
+    <Icon size={64} />
+    <h2 className={styles.featureTitle}>{title}</h2>
+    <div className={styles.featureText}>{text}</div>
+  </div>
+);

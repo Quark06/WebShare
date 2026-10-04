@@ -46,7 +46,7 @@ export class ProfileModal extends React.Component<{
 
   onSignOut = () => {
     firebase.auth().signOut();
-    window.localStorage.removeItem("watchparty-loginname");
+    window.localStorage.removeItem("webshare-loginname");
     window.location.reload();
   };
 
@@ -89,7 +89,7 @@ export class ProfileModal extends React.Component<{
   };
 
   authDiscord = () => {
-    const url = `https://discord.com/api/oauth2/authorize?client_id=1071707916719095908&redirect_uri=${encodeURIComponent(
+    const url = `https://discord.com/api/oauth2/authorize?client_id=${encodeURIComponent(config.VITE_DISCORD_CLIENT_ID)}&redirect_uri=${encodeURIComponent(
       config.VITE_OAUTH_REDIRECT_HOSTNAME,
     )}%2Fdiscord%2Fauth&response_type=token&scope=identify`;
     window.open(
@@ -131,8 +131,8 @@ export class ProfileModal extends React.Component<{
           </p>
           <p>
             Note: If you have an active subscription, deleting your account will
-            NOT automatically cancel it and you will need to contact
-            support@watchparty.me to cancel.
+            NOT automatically cancel it. Manage your subscription before deleting
+            your account.
           </p>
           <div style={{ display: "flex", gap: "4px" }}>
             <Button
@@ -195,8 +195,8 @@ export class ProfileModal extends React.Component<{
           >
             Verify Email
           </Button>
-          {this.context.isSubscriber && <ManageSubButton />}
-          {this.state.linkedDiscord ? (
+          {this.context.isSubscriber && this.context.subscriptionsEnabled && <ManageSubButton />}
+          {config.VITE_DISCORD_CLIENT_ID && (this.state.linkedDiscord ? (
             <Button
               leftSection={<IconBrandDiscordFilled />}
               color="red"
@@ -223,7 +223,7 @@ export class ProfileModal extends React.Component<{
                 </Button>
               </HoverCard.Target>
             </HoverCard>
-          )}
+          ))}
           <Button
             disabled={this.state.resetDisabled}
             leftSection={<IconKeyFilled />}

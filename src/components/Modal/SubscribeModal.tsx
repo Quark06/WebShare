@@ -46,19 +46,19 @@ export class SubscribeModal extends React.Component<{
         onClose={closeSubscribe}
         centered
         size="auto"
-        title="Subscribe to WatchParty Plus"
+        title="Subscribe to WebShare Plus"
       >
         <div>
           Subscriptions help us maintain the service and build new features!
-          Please consider supporting us if you're enjoying WatchParty.
+          Please consider supporting us if you're enjoying WebShare.
         </div>
         <Title order={6}>Features</Title>
         <Table striped>
           <Table.Thead>
             <Table.Tr>
               <Table.Th />
-              <Table.Th>WatchParty Free</Table.Th>
-              <Table.Th>WatchParty Plus</Table.Th>
+              <Table.Th>WebShare Free</Table.Th>
+              <Table.Th>WebShare Plus</Table.Th>
             </Table.Tr>
           </Table.Thead>
 
@@ -75,8 +75,8 @@ export class SubscribeModal extends React.Component<{
             </Table.Tr>
             <Table.Tr>
               <Table.Td>Number of Permanent Rooms</Table.Td>
-              <Table.Td>1</Table.Td>
-              <Table.Td>20</Table.Td>
+              <Table.Td>Server configured</Table.Td>
+              <Table.Td>Server configured</Table.Td>
             </Table.Tr>
             {/* <Table.Tr>
                   <Table.Td>Max Room Capacity</Table.Td>
@@ -100,8 +100,8 @@ export class SubscribeModal extends React.Component<{
             </Table.Tr>
             <Table.Tr>
               <Table.Td>VBrowser Session Length</Table.Td>
-              <Table.Td>3 hours</Table.Td>
-              <Table.Td>24 hours</Table.Td>
+              <Table.Td>Server configured</Table.Td>
+              <Table.Td>Server configured</Table.Td>
             </Table.Tr>
             <Table.Tr>
               <Table.Td>VBrowser Region Selection</Table.Td>
@@ -143,7 +143,7 @@ export class SubscribeModal extends React.Component<{
             <Table.Tr>
               <Table.Td>Price</Table.Td>
               <Table.Td>$0 / month</Table.Td>
-              <Table.Td>$5 / month</Table.Td>
+              <Table.Td>See checkout</Table.Td>
             </Table.Tr>
           </Table.Tbody>
         </Table>

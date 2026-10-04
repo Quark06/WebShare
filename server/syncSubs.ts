@@ -26,7 +26,7 @@ if (process.env.NODE_ENV === "development") {
 setInterval(syncSubscribers, 60 * 1000);
 
 async function syncSubscribers() {
-  if (!config.STRIPE_SECRET_KEY || !config.FIREBASE_ADMIN_SDK_CONFIG) {
+  if (!config.STRIPE_SECRET_KEY || !config.STRIPE_PRICE_ID || !config.FIREBASE_ADMIN_SDK_CONFIG) {
     return;
   }
   console.time("syncSubscribers");

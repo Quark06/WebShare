@@ -181,39 +181,10 @@ export function shuffle(array: any[]) {
   }
 }
 
-export const iceServers = () => [
-  { urls: "stun:stun.l.google.com:19302" },
-  {
-    urls: "turn:5.161.207.54:3478",
-    username: "username",
-    credential: "password",
-  },
-  {
-    urls: "turn:5.161.49.183:3478",
-    username: "username",
-    credential: "password",
-  },
-  {
-    urls: "turn:135.181.147.65:3478",
-    username: "username",
-    credential: "password",
-  },
-  {
-    urls: "turn:5.78.83.26:3478",
-    username: "username",
-    credential: "password",
-  },
-  {
-    urls: "turn:5.223.48.157:3478",
-    username: "username",
-    credential: "password",
-  },
-  // {
-  //   urls: 'turn:numb.viagenie.ca',
-  //   credential: 'watchparty',
-  //   username: 'howardzchung@gmail.com',
-  // },
-];
+export const iceServers = (): RTCIceServer[] =>
+  config.VITE_ICE_SERVERS
+    ? JSON.parse(config.VITE_ICE_SERVERS)
+    : [{ urls: "stun:stun.l.google.com:19302" }];
 
 export const serverPath =
   config.VITE_SERVER_HOST ||
@@ -339,23 +310,23 @@ export async function openFileSelector(accept?: string) {
 }
 
 export function getOrCreateClientId() {
-  let clientId = window.localStorage.getItem("watchparty-clientid");
+  let clientId = window.localStorage.getItem("webshare-clientid");
   if (!clientId) {
     // Generate a new clientID and save it
     // This requires https, so fallback to JS implementation if needed
     clientId = createUuid();
-    window.localStorage.setItem("watchparty-clientid", clientId);
+    window.localStorage.setItem("webshare-clientid", clientId);
   }
   return clientId;
 }
 
 export function getOrCreateSessionId() {
-  let sessionId = window.localStorage.getItem("watchparty-sessionid");
+  let sessionId = window.localStorage.getItem("webshare-sessionid");
   if (!sessionId) {
     // Generate a new sessionID and save it
     // This requires https, so fallback to JS implementation if needed
     sessionId = createUuid();
-    window.localStorage.setItem("watchparty-sessionid", sessionId);
+    window.localStorage.setItem("webshare-sessionid", sessionId);
   }
   return sessionId;
 }
@@ -366,7 +337,7 @@ export function addAndSavePassword(roomId: string, password: string) {
     [roomId]: password,
   };
   window.localStorage.setItem(
-    "watchparty-passwords",
+    "webshare-passwords",
     JSON.stringify(newPasswords),
   );
 }
@@ -374,7 +345,7 @@ export function addAndSavePassword(roomId: string, password: string) {
 export function getSavedPasswords(): Record<string, string> {
   try {
     const savedPasswordsString =
-      window.localStorage.getItem("watchparty-passwords") ?? "{}";
+      window.localStorage.getItem("webshare-passwords") ?? "{}";
     const savedPasswords = JSON.parse(savedPasswordsString);
     return savedPasswords;
   } catch (e) {
