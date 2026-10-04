@@ -3,11 +3,13 @@ import {
   debounce,
   getMediaPathResults,
   getYouTubeResults,
+  getBilibiliResults,
   getMusicResults,
   getMusicPlaylistResults,
   isHttp,
   isMagnet,
   isYouTube,
+  isBilibili,
 } from "../../utils/utils";
 import { examples } from "../../utils/examples";
 import {
@@ -17,7 +19,7 @@ import {
   type MusicPlatform,
 } from "../../utils/music";
 import ChatVideoCard from "../ChatVideoCard/ChatVideoCard";
-import { IconLink, IconX } from "@tabler/icons-react";
+import { IconLink, IconSearch, IconX } from "@tabler/icons-react";
 import {
   ActionIcon,
   Autocomplete,
@@ -41,7 +43,8 @@ type ComboBoxState = {
   inputMedia?: string;
   items: SearchResult[];
   loading: boolean;
-  platform: "youtube" | MusicPlatform;
+  dropdownOpened: boolean;
+  platform: "youtube" | "bilibili" | MusicPlatform;
   error: string;
 };
 
@@ -50,11 +53,15 @@ export class ComboBox extends React.Component<ComboBoxProps, ComboBoxState> {
     inputMedia: undefined as string | undefined,
     items: [] as SearchResult[],
     loading: false,
+    dropdownOpened: false,
     platform: "youtube",
     error: "",
   };
   searchRevision = 0;
   inputRef = React.createRef<HTMLInputElement>();
+
+  usingVideoSearch = () =>
+    this.state.platform === "youtube" || this.state.platform === "bilibili";
 
   setMediaAndClose = async (value: string) => {
     try {
@@ -105,6 +112,7 @@ export class ComboBox extends React.Component<ComboBoxProps, ComboBoxState> {
           if (isYouTube(query)) {
             type = "youtube";
           }
+          if (isBilibili(query)) type = "bilibili";
           if (isMagnet(query)) {
             type = "magnet";
           }
@@ -123,13 +131,16 @@ export class ComboBox extends React.Component<ComboBoxProps, ComboBoxState> {
         const data =
           platform === "youtube"
             ? await getYouTubeResults(query)
-            : await getMusicResults(platform, query);
+            : platform === "bilibili"
+              ? await getBilibiliResults(query)
+              : await getMusicResults(platform, query);
         items = data;
       }
       if (revision !== this.searchRevision) return;
       this.setState({
         loading: false,
         items,
+        dropdownOpened: items.length > 0,
       });
     } catch (error) {
       if (revision !== this.searchRevision) return;
@@ -141,11 +152,24 @@ export class ComboBox extends React.Component<ComboBoxProps, ComboBoxState> {
     }
   };
 
-  debouncedSearch = debounce(this.doSearch);
+  debouncedSearch = debounce(() => {
+    const query = this.state.inputMedia || "";
+    if (
+      !this.usingVideoSearch() ||
+      !query ||
+      isHttp(query) ||
+      isMagnet(query)
+    ) {
+      this.doSearch();
+    }
+  });
 
   onChange = (value: string) => {
     ++this.searchRevision;
-    this.setState({ inputMedia: value }, this.debouncedSearch);
+    this.setState(
+      { inputMedia: value, items: [], loading: false, error: "" },
+      this.debouncedSearch,
+    );
   };
 
   render() {
@@ -175,6 +199,7 @@ export class ComboBox extends React.Component<ComboBoxProps, ComboBoxState> {
             value={this.state.platform}
             data={[
               { value: "youtube", label: "YouTube" },
+              { value: "bilibili", label: "Bilibili" },
               ...musicPlatforms.map((platform) => ({
                 value: platform,
                 label: musicPlatformNames[platform],
@@ -186,16 +211,28 @@ export class ComboBox extends React.Component<ComboBoxProps, ComboBoxState> {
                 {
                   platform: value as ComboBoxState["platform"],
                   items: [],
+                  loading: false,
                   error: "",
                 },
                 () => {
-                  if (this.state.inputMedia) this.doSearch();
+                  const query = this.state.inputMedia;
+                  if (
+                    query &&
+                    (!this.usingVideoSearch() ||
+                      isHttp(query) ||
+                      isMagnet(query))
+                  ) {
+                    this.doSearch();
+                  }
                 },
               );
             }}
           />
           <Autocomplete
             ref={this.inputRef}
+            dropdownOpened={this.state.dropdownOpened}
+            onDropdownOpen={() => this.setState({ dropdownOpened: true })}
+            onDropdownClose={() => this.setState({ dropdownOpened: false })}
             comboboxProps={{
               onOptionSubmit: (value) => {
                 this.setMediaAndClose(value);
@@ -234,6 +271,7 @@ export class ComboBox extends React.Component<ComboBoxProps, ComboBoxState> {
                 inputMedia: undefined,
                 items: [],
                 loading: false,
+                dropdownOpened: false,
               });
             }}
             onKeyDown={(e: any) => {
@@ -244,10 +282,15 @@ export class ComboBox extends React.Component<ComboBoxProps, ComboBoxState> {
                 );
                 if (selected?.hasAttribute("data-combobox-selected")) return;
                 if (
-                  this.state.platform !== "youtube" &&
                   this.state.inputMedia &&
-                  !isHttp(this.state.inputMedia)
+                  !isHttp(this.state.inputMedia) &&
+                  !isMagnet(this.state.inputMedia)
                 ) {
+                  if (this.usingVideoSearch()) {
+                    e.preventDefault();
+                    this.doSearch();
+                    return;
+                  }
                   if (this.state.loading || !this.state.items[0]) return;
                   this.setMediaAndClose(this.state.items[0].url);
                   e.target.blur();
@@ -257,22 +300,39 @@ export class ComboBox extends React.Component<ComboBoxProps, ComboBoxState> {
                 e.target.blur();
               }
             }}
+            rightSectionWidth={this.usingVideoSearch() ? 70 : 36}
+            rightSectionPointerEvents="auto"
             rightSection={
-              <ActionIcon
-                color="red"
-                onClick={(e: any) => this.setMediaAndClose("")}
-                title="Clear"
-              >
-                <IconX />
-              </ActionIcon>
+              <Group gap={0} wrap="nowrap">
+                {this.usingVideoSearch() && (
+                  <ActionIcon
+                    title="Search"
+                    aria-label="Search videos"
+                    disabled={this.props.disabled || this.state.loading}
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => this.doSearch()}
+                  >
+                    <IconSearch />
+                  </ActionIcon>
+                )}
+                <ActionIcon
+                  color="red"
+                  onClick={() => this.setMediaAndClose("")}
+                  title="Clear"
+                >
+                  <IconX />
+                </ActionIcon>
+              </Group>
             }
             leftSection={
               this.state.loading ? <Loader size="sm" /> : <IconLink />
             }
             placeholder={
               this.state.platform === "youtube"
-                ? "Enter a video or music link, file URL, magnet link, or YouTube search term"
-                : `Search ${musicPlatformNames[this.state.platform]} or enter a music song / playlist link`
+                ? "Enter a link, or search YouTube with Enter / Search"
+                : this.state.platform === "bilibili"
+                  ? "Enter a link, or search Bilibili with Enter / Search"
+                  : `Search ${musicPlatformNames[this.state.platform]} or enter a music song / playlist link`
             }
             value={
               this.state.inputMedia !== undefined

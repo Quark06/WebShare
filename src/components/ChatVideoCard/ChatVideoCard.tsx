@@ -5,6 +5,7 @@ import { decodeEntities, formatTimestamp } from "../../utils/utils";
 import classes from "./ChatVideoCard.module.css";
 import {
   IconArrowUp,
+  IconBrandBilibili,
   IconBrandYoutubeFilled,
   IconFile,
   IconMagnetFilled,
@@ -92,11 +93,15 @@ const ChatVideoCard: React.FC<{
               className={classes.Thumbnail}
               src={video.img}
               alt={video.name}
+              referrerPolicy={
+                video.type === "bilibili" ? "no-referrer" : undefined
+              }
             />
           )}
         </div>
         <div style={{ flexShrink: 0 }}>
           {video.type === "youtube" && <IconBrandYoutubeFilled color="red" />}
+          {video.type === "bilibili" && <IconBrandBilibili color="#00a1d6" />}
           {video.type === "file" && <IconFile />}
           {video.type === "magnet" && <IconMagnetFilled />}
           {video.type === "music" && <IconMusic />}

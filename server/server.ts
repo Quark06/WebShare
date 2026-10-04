@@ -9,6 +9,7 @@ import http from "node:http";
 import { Server } from "socket.io";
 import { searchYoutube, youtubePlaylist } from "./utils/youtube.ts";
 import { resolveBilibili } from "./utils/bilibili.ts";
+import { searchBilibili } from "./utils/bilibiliSearch.ts";
 import {
   searchMusic,
   resolveMusic,
@@ -276,6 +277,20 @@ app.get("/timeSeries", async (req, res) => {
   }
 });
 
+app.get("/bilibili/search", async (req, res) => {
+  if (typeof req.query.q !== "string" || !req.query.q.trim()) {
+    res.status(400).json({ error: "A Bilibili search term is required." });
+    return;
+  }
+  try {
+    res.json(await searchBilibili(req.query.q));
+  } catch (error) {
+    res.status(502).json({
+      error: error instanceof Error ? error.message : "Bilibili search failed.",
+    });
+  }
+});
+
 app.get("/bilibili", async (req, res) => {
   if (typeof req.query.url !== "string") {
     res.status(400).json({ error: "A Bilibili video URL is required." });
@@ -369,8 +384,11 @@ app.get("/youtube", async (req, res) => {
       redisCount("youtubeSearch");
       const items = await searchYoutube(req.query.q);
       res.json(items);
-    } catch {
-      res.status(500).json({ error: "youtube error" });
+    } catch (error) {
+      res.status(502).json({
+        error:
+          error instanceof Error ? error.message : "YouTube search failed.",
+      });
     }
   } else {
     res.status(500).json({ error: "query must be a string" });

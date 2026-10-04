@@ -10,6 +10,7 @@ const defaults = {
   REDIS_URL: "", // Optional, for metrics
   DATABASE_URL: "", // Optional, for permanent rooms and VBrowser management
   YOUTUBE_API_KEY: "", // Optional, provide one to enable searching YouTube
+  BILIBILI_COOKIE: "", // Optional, server-only Cookie for Bilibili search
   METING_NETEASE_COOKIE: "", // Optional, your own music platform login cookies (server only)
   METING_TENCENT_COOKIE: "",
   METING_KUGOU_COOKIE: "",

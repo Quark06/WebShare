@@ -14,7 +14,7 @@ A website for watching videos and listening to music together, based on [WatchPa
   - Stream-your-own-file
   - Video files on the Internet (anything accessible via HTTP)
   - YouTube videos
-  - Bilibili video links (direct HTML5 single-file MP4 playback)
+  - Bilibili video search and links (direct HTML5 single-file MP4 playback)
   - Music song links and playlists from NetEase, QQ Music, KuGou and Kuwo (via Meting)
   - Magnet links (via WebTorrent)
   - .m3u8 streams (HLS)
@@ -52,13 +52,19 @@ After creating a **YouTube Data API V3** access, you can create an API key which
 
 After that restart your server to enable the YouTube API access on your server.
 
+Choose **YouTube** in the room's search-platform selector, enter keywords and press Enter or click **Search**. Select a result to play it, or use **Add to Playlist**. Video search runs only when submitted; direct links can still be pasted on any search platform. Only embeddable videos are requested, and identical searches share a five-minute cache. A missing key or API failure is shown in the search box.
+
 ### Bilibili videos
 
 Paste an ordinary Bilibili video URL (`bilibili.com/video/BV...`, `av...`, or a `b23.tv` short link) into the existing room input. An explicit `?p=2` selects that part; automatic multi-part playback is not added. The room and playlist retain the original link.
 
 Bilibili playback works without additional configuration. The server requests video metadata and a single-file MP4 using Bilibili's `platform=html5` playback API, following the API approach described in [BiliAnalysis](https://github.com/mmyo456/BiliAnalysis). The browser plays the file directly from Bilibili with the existing video element. Video traffic does not pass through WebShare. Actual quality depends on the video and API response, and API requests can still be rejected by Bilibili.
 
-Successful resolutions are shared and cached for five minutes; failed resolutions are cached for 30 seconds to reduce repeated requests. WebShare does not download, merge, or transcode the media. Search, live streams, and login-required content are not part of this integration.
+Choose **Bilibili** in the room's search-platform selector, enter keywords and press Enter or click **Search**. Search uses [biliAPI](https://github.com/renmu123/biliAPI) (`@renmu/bili-api`) on the server to fetch the first page of ordinary video results, with titles, covers, authors and durations. Select a result to play it or use **Add to Playlist**. Results retain the video page URL; playback URLs are resolved only when a video is played. Search results are cached for five minutes, with concurrent identical searches sharing one request. Search failures are cached for 30 seconds.
+
+Anonymous search is the default. If Bilibili rejects searches, you can configure your own `BILIBILI_COOKIE` in the server `.env` and restart. The Cookie is used only for search and remains on the server. The server must be able to reach Bilibili's APIs; each viewer still loads video directly from Bilibili. Search availability does not guarantee that a video has a playable single-file MP4 source.
+
+Successful playback resolutions are shared and cached for five minutes; failed resolutions are cached for 30 seconds to reduce repeated requests. WebShare does not download, merge, or transcode the media. Live streams and login-required playback are not part of this integration.
 
 ### Music (Meting)
 

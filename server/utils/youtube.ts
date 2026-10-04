@@ -55,16 +55,41 @@ export const mapYoutubePlaylistResult = (
   };
 };
 
+const searchCache = new Map<
+  string,
+  { expires: number; result: Promise<PlaylistVideo[]> }
+>();
+
 export const searchYoutube = async (
   query: string,
 ): Promise<PlaylistVideo[]> => {
-  const response = await Youtube?.search.list({
-    part: ["snippet"],
-    type: ["video"],
-    maxResults: 25,
-    q: query,
+  if (!Youtube)
+    throw new Error("YouTube search requires YOUTUBE_API_KEY on the server.");
+  const keyword = query.trim();
+  if (!keyword || keyword.length > 200) {
+    throw new Error("Enter a YouTube search term of up to 200 characters.");
+  }
+  const now = Date.now();
+  for (const [key, entry] of searchCache) {
+    if (entry.expires <= now) searchCache.delete(key);
+  }
+  const cached = searchCache.get(keyword);
+  if (cached) return cached.result;
+  const result = Youtube.search
+    .list({
+      part: ["snippet"],
+      type: ["video"],
+      maxResults: 25,
+      q: keyword,
+      videoEmbeddable: "true",
+    })
+    .then((response) => response.data.items?.map(mapYoutubeSearchResult) ?? []);
+  searchCache.set(keyword, { expires: now + 5 * 60 * 1000, result });
+  void result.catch(() => {
+    const entry = searchCache.get(keyword);
+    if (entry?.result === result) entry.expires = Date.now() + 30000;
   });
-  return response?.data?.items?.map(mapYoutubeSearchResult) ?? [];
+  return result;
 };
 
 export const youtubePlaylist = async (

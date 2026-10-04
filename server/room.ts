@@ -16,6 +16,7 @@ import {
 } from "./utils/youtube.ts";
 //@ts-expect-error
 import twitch from "twitch-m3u8";
+import { getBilibiliSearchVideo } from "./utils/bilibiliSearch.ts";
 import { type QueryResult } from "pg";
 import { Docker } from "./vm/docker.ts";
 
@@ -709,6 +710,8 @@ export class Room {
         video = await fetchYoutubeVideo(youtubeVideoId);
       } else if (isMusic(data)) {
         video = await getMusicTrack(data);
+      } else {
+        video = getBilibiliSearchVideo(data);
       }
     } catch (e) {
       // Failed to fetch media metadata but can still add the URL

@@ -280,7 +280,19 @@ export async function getYouTubeResults(
     serverPath + "/youtube?q=" + encodeURIComponent(query),
   );
   const data = await response.json();
+  if (!response.ok) throw new Error(data.error || "YouTube search failed.");
   return data.map((d: any) => ({ ...d, type: "youtube" }));
+}
+
+export async function getBilibiliResults(
+  query: string,
+): Promise<SearchResult[]> {
+  const response = await fetch(
+    serverPath + "/bilibili/search?q=" + encodeURIComponent(query),
+  );
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.error || "Bilibili search failed.");
+  return data;
 }
 
 async function musicResults(path: string): Promise<SearchResult[]> {
