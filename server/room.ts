@@ -362,6 +362,9 @@ export class Room {
       socket.on("CMD:playlistDelete", (data: unknown) => {
         validateLock() && this.playlistDelete(Number(data));
       });
+      socket.on("CMD:playlistClear", () => {
+        validateLock() && this.playlistClear();
+      });
       socket.on("CMD:kickUser", async (data: unknown) => {
         (await validateOwner()) && this.kickUser(data);
       });
@@ -763,6 +766,11 @@ export class Room {
       this.playlist.splice(index, 1);
       this.io.of(this.roomId).emit("playlist", this.playlist);
     }
+  };
+
+  private playlistClear = () => {
+    this.playlist = [];
+    this.io.of(this.roomId).emit("playlist", this.playlist);
   };
 
   private playlistMove = (raw: unknown) => {
