@@ -42,17 +42,19 @@ For a production build, run `npm run build`, then start the server with `NODE_EN
 
 All of these are optional and the application should work without them. Some functionality may be missing.
 
-### YouTube API (video search)
+### YouTube video search
 
-This project uses the YouTube API for video search, which requires an API key. You can get one from Google [here](https://console.developers.google.com).
+Video search uses [YouTube.js](https://github.com/LuanRT/YouTube.js) (`youtubei.js`) on the server. Search works without a Google API key or a YouTube login.
 
-Without an API key you won't be able to search for videos via the searchbox.
+Choose **YouTube** in the room's search-platform selector, enter keywords and press Enter or click **Search**. Select a result to play it, or use **Add to Playlist**. Video search runs only when submitted; direct links can still be pasted on any search platform. Search returns up to 25 ordinary videos from the first page, with titles, covers, authors and durations. Identical searches share a five-minute cache; search failures are cached for 30 seconds and shown in the search box. Adding a recently searched video to the playlist reuses its search metadata without an API key.
 
-After creating a **YouTube Data API V3** access, you can create an API key which you can add to your environment variables by copying the `.env.example`, renaming it to `.env` and adding the key to the YOUTUBE_API_KEY variable.
+The server must be able to reach YouTube. YouTube.js uses YouTube's internal API, which can change or reject requests. Search results do not guarantee that a video allows embedded playback. Each viewer still plays video through the existing YouTube iframe using their own network.
 
-After that restart your server to enable the YouTube API access on your server.
+YouTube search requests use an HTTP(S) proxy when configured. The priority is `YOUTUBE_PROXY_URL` in the server environment, then `HTTPS_PROXY` / `HTTP_PROXY` (including lowercase variants, with `NO_PROXY` supported), then the enabled Windows manual system proxy. For example, set `YOUTUBE_PROXY_URL=http://127.0.0.1:10808` in the server `.env` and restart. On Windows, the enabled system proxy is detected automatically, so TUN mode is not required for search. Proxy selection is read once per server process; restart after changing proxy settings. If no proxy is configured, requests connect directly.
 
-Choose **YouTube** in the room's search-platform selector, enter keywords and press Enter or click **Search**. Select a result to play it, or use **Add to Playlist**. Video search runs only when submitted; direct links can still be pasted on any search platform. Only embeddable videos are requested, and identical searches share a five-minute cache. A missing key or API failure is shown in the search box.
+### Optional YouTube Data API
+
+`YOUTUBE_API_KEY` remains optional for fetching metadata when adding an unsearched YouTube link and for importing YouTube playlists. Enable **YouTube Data API v3** in [Google Cloud](https://console.cloud.google.com/), create an API key, set `YOUTUBE_API_KEY` in the server `.env`, and restart the server. Keyword searches always use YouTube.js, even when this key is configured.
 
 ### Bilibili videos
 

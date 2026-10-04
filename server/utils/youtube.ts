@@ -6,6 +6,8 @@ import {
   YOUTUBE_VIDEO_ID_REGEX,
 } from "./regex.ts";
 import { youtube, youtube_v3 } from "@googleapis/youtube";
+import { Innertube, YTNodes } from "youtubei.js";
+import { youtubeFetch } from "./youtubeFetch.ts";
 
 let Youtube = config.YOUTUBE_API_KEY
   ? youtube({
@@ -15,14 +17,14 @@ let Youtube = config.YOUTUBE_API_KEY
   : null;
 
 export const mapYoutubeSearchResult = (
-  video: youtube_v3.Schema$SearchResult,
+  video: YTNodes.Video,
 ): PlaylistVideo => {
   return {
-    channel: video.snippet?.channelTitle ?? "",
-    url: "https://www.youtube.com/watch?v=" + video?.id?.videoId,
-    name: video.snippet?.title ?? "",
-    img: video.snippet?.thumbnails?.default?.url ?? "",
-    duration: 0,
+    channel: video.author.name,
+    url: "https://www.youtube.com/watch?v=" + video.video_id,
+    name: video.title.toString(),
+    img: video.best_thumbnail?.url ?? "",
+    duration: video.duration.seconds || 0,
     type: "youtube",
   };
 };
@@ -59,12 +61,28 @@ const searchCache = new Map<
   string,
   { expires: number; result: Promise<PlaylistVideo[]> }
 >();
+const searchVideos = new Map<
+  string,
+  { expires: number; video: PlaylistVideo }
+>();
+let searchClient: Promise<Innertube> | undefined;
+
+const getSearchClient = (): Promise<Innertube> => {
+  if (!searchClient) {
+    searchClient = Innertube.create({
+      retrieve_player: false,
+      fetch: youtubeFetch,
+    });
+    void searchClient.catch(() => {
+      searchClient = undefined;
+    });
+  }
+  return searchClient;
+};
 
 export const searchYoutube = async (
   query: string,
 ): Promise<PlaylistVideo[]> => {
-  if (!Youtube)
-    throw new Error("YouTube search requires YOUTUBE_API_KEY on the server.");
   const keyword = query.trim();
   if (!keyword || keyword.length > 200) {
     throw new Error("Enter a YouTube search term of up to 200 characters.");
@@ -73,17 +91,25 @@ export const searchYoutube = async (
   for (const [key, entry] of searchCache) {
     if (entry.expires <= now) searchCache.delete(key);
   }
+  for (const [id, entry] of searchVideos) {
+    if (entry.expires <= now) searchVideos.delete(id);
+  }
   const cached = searchCache.get(keyword);
   if (cached) return cached.result;
-  const result = Youtube.search
-    .list({
-      part: ["snippet"],
-      type: ["video"],
-      maxResults: 25,
-      q: keyword,
-      videoEmbeddable: "true",
-    })
-    .then((response) => response.data.items?.map(mapYoutubeSearchResult) ?? []);
+  const result = getSearchClient().then(async (client) => {
+    const response = await client.search(keyword, { type: "video" });
+    const results = response.videos
+      .filterType(YTNodes.Video)
+      .slice(0, 25)
+      .map(mapYoutubeSearchResult);
+    for (const video of results) {
+      searchVideos.set(getYoutubeVideoID(video.url)!, {
+        expires: Date.now() + 5 * 60 * 1000,
+        video,
+      });
+    }
+    return results;
+  });
   searchCache.set(keyword, { expires: now + 5 * 60 * 1000, result });
   void result.catch(() => {
     const entry = searchCache.get(keyword);
@@ -120,6 +146,8 @@ export const getYoutubeVideoID = (url: string) => {
 export const fetchYoutubeVideo = async (
   id: string,
 ): Promise<PlaylistVideo | null> => {
+  const cached = searchVideos.get(id);
+  if (cached && cached.expires > Date.now()) return cached.video;
   const response = await Youtube?.videos.list({
     part: ["snippet", "contentDetails"],
     id: [id],
