@@ -81,7 +81,7 @@ export const SettingsModal = ({
   mediaPath,
   setMediaPath,
 }: SettingsModalProps) => {
-  const { user, isSubscriber } = useContext(MetadataContext);
+  const { user } = useContext(MetadataContext);
   const [updateTS, setUpdateTS] = useState(0);
   const [permModalOpen, setPermModalOpen] = useState(false);
   const [validVanity, setValidVanity] = useState(true);
@@ -299,8 +299,7 @@ export const SettingsModal = ({
             // name={`Set Custom Room URL`}
             // description="Set a custom URL for this room. Inappropriate names may be revoked."
             checked={Boolean(roomLock)}
-            disabled={!isSubscriber}
-            subOnly={true}
+            disabled={false}
             content={
               <TextInput
                 label={t("Set Custom Room URL")}
@@ -308,7 +307,6 @@ export const SettingsModal = ({
                   "Set a custom URL for this room. Inappropriate names may be revoked.",
                 )}
                 value={vanity ?? ""}
-                disabled={!isSubscriber}
                 onChange={(e: any) => {
                   setAdminSettingsChanged(true);
                   checkValidVanity(e.target.value);
@@ -332,8 +330,7 @@ export const SettingsModal = ({
         {owner && owner === user?.uid && (
           <SettingRow
             toggle={false}
-            disabled={!isSubscriber}
-            subOnly={true}
+            disabled={false}
             content={
               <div
                 style={{ display: "flex", flexDirection: "column", gap: "4px" }}
@@ -344,7 +341,6 @@ export const SettingsModal = ({
                     "Set the room title, description and title color to be displayed in the top bar.",
                   )}
                   value={roomTitleInput ?? roomTitle ?? ""}
-                  disabled={!isSubscriber}
                   maxLength={roomTitleMaxCharLength}
                   onChange={(e) => {
                     setAdminSettingsChanged(true);
@@ -386,10 +382,7 @@ export const SettingsModal = ({
                         </React.Fragment>
                       </Popover.Dropdown>
                       <Popover.Target>
-                        <ActionIcon
-                          color={roomTitleColorInput}
-                          disabled={!isSubscriber}
-                        >
+                        <ActionIcon color={roomTitleColorInput}>
                           <IconPaintFilled size={16} />
                         </ActionIcon>
                       </Popover.Target>
@@ -398,7 +391,6 @@ export const SettingsModal = ({
                 ></TextInput>
                 <TextInput
                   value={roomDescriptionInput ?? roomDescription ?? ""}
-                  disabled={!isSubscriber}
                   maxLength={roomDescriptionMaxCharLength}
                   onChange={(e: any) => {
                     setAdminSettingsChanged(true);
@@ -448,7 +440,6 @@ const SettingRow = ({
   disabled,
   onChange,
   content,
-  subOnly,
   helpIcon,
   toggle,
   label,
@@ -460,7 +451,6 @@ const SettingRow = ({
   updateTS?: number;
   onChange?: React.ChangeEventHandler<HTMLInputElement>;
   content?: React.ReactNode;
-  subOnly?: boolean;
   helpIcon?: React.ReactNode;
   toggle?: boolean;
   label?: string;
@@ -479,11 +469,6 @@ const SettingRow = ({
           {label ? (
             <Badge size="xs" color="red">
               {label}
-            </Badge>
-          ) : null}
-          {subOnly ? (
-            <Badge size="xs" color="orange">
-              {t("Subscriber only")}
             </Badge>
           ) : null}
         </div>

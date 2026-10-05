@@ -18,7 +18,7 @@ export const Privacy = () => (
     <p>{t("Your browser stores settings, a client identifier, your display name and saved room passwords. Room participants can see your name, messages and shared media links.")}</p>
     <p>{t("The server processes room state and messages. A deployment with a database can save room data between restarts. The operator controls server logs and data retention.")}</p>
     <p>{t("Video, live stream and music searches send requests to their respective platforms. Direct playback connects your browser to the media provider. Providers such as YouTube, Bilibili, music platforms and avatar services have their own privacy practices.")}</p>
-    <p>{t("Camera, screen and file sharing connect room participants through WebRTC. A configured relay service may carry shared media.")}</p>
+    <p>{t("Camera, screen and file sharing connect room participants through WebRTC.")}</p>
     <p>{t("Contact the operator of this site for account or data requests. WebShare does not include a default analytics service.")}</p>
   </div>
 );
@@ -29,7 +29,7 @@ export const Terms = () => (
     <p>{t("Share media and files you are allowed to share, and respect other room participants.")}</p>
     <p>{withElement(t("Media platforms control content availability and playback permissions. YouTube usage is subject to the {link}."), "link", <a href="https://www.youtube.com/t/terms">{t("YouTube Terms of Service")}</a>)}</p>
     <p>{t("Room links can be shared with other people. Use available room controls to manage access.")}</p>
-    <p>{t("Available features depend on this site's configuration. Contact its operator for service or billing questions; any subscription price is shown at checkout.")}</p>
+    <p>{t("Available features depend on this site's configuration. Contact its operator for service questions.")}</p>
   </div>
 );
 

@@ -34,7 +34,6 @@ export async function getStats() {
     creationTime: Date;
     lastUpdateTime: Date;
     vanity: string;
-    isSubRoom: boolean;
     roomTitle: string;
     roomDescription: string;
     mediaPath: string;
@@ -46,7 +45,7 @@ export async function getStats() {
     creator: string;
     lock: string;
   }>(
-    `SELECT "roomId", "creationTime", "lastUpdateTime", vanity, "isSubRoom", "roomTitle", "roomDescription", "mediaPath", owner, password,
+    `SELECT "roomId", "creationTime", "lastUpdateTime", vanity, "roomTitle", "roomDescription", "mediaPath", owner, password,
     data->'video' as video, data->'videoTS' as "videoTS", data->'vBrowser' as "vBrowser", data->'creator' as creator, data->'lock' as lock
     FROM room
     WHERE "lastUpdateTime" > NOW() - INTERVAL '7 day'
@@ -81,7 +80,6 @@ export async function getStats() {
         creationTime: dbRoom.creationTime || undefined,
         lastUpdateTime: dbRoom.lastUpdateTime || undefined,
         vanity: dbRoom.vanity || undefined,
-        isSubRoom: dbRoom.isSubRoom || undefined,
         owner: dbRoom.owner || undefined,
         password: dbRoom.password || undefined,
         roomTitle: dbRoom.roomTitle || undefined,
@@ -127,9 +125,6 @@ export async function getStats() {
   const numAllRooms = Number(
     (await postgres?.query("SELECT count(1) from room"))?.rows[0].count,
   );
-  const numSubs = Number(
-    (await postgres?.query("SELECT count(1) from subscriber"))?.rows[0].count,
-  );
   const discordBotWatch = await getRedisCountDay("discordBotWatch");
   const createRoomErrors = await getRedisCountDay("createRoomError");
   const deleteAccounts = await getRedisCountDay("deleteAccount");
@@ -159,11 +154,9 @@ export async function getStats() {
   const proxyReqs = await getRedisCountDay("proxyReqs");
   const urlStarts = await getRedisCountDay("urlStarts");
   const streamStarts = await getRedisCountDay("streamStarts");
-  const convertStarts = await getRedisCountDay("convertStarts");
   const playlistAdds = await getRedisCountDay("playlistAdds");
   const screenShareStarts = await getRedisCountDay("screenShareStarts");
   const fileShareStarts = await getRedisCountDay("fileShareStarts");
-  const mediasoupStarts = await getRedisCountDay("mediasoupStarts");
   const videoChatStarts = await getRedisCountDay("videoChatStarts");
   const connectStarts = await getRedisCountDay("connectStarts");
   const connectStartsDistinct = await getRedisCountDayDistinct(
@@ -244,7 +237,6 @@ export async function getStats() {
       postgresUsage,
       numPermaRooms,
       numAllRooms,
-      numSubs,
       discordBotWatch,
       createRoomErrors,
       createRoomPreloads,
@@ -254,11 +246,9 @@ export async function getStats() {
       proxyReqs,
       urlStarts,
       streamStarts,
-      convertStarts,
       playlistAdds,
       screenShareStarts,
       fileShareStarts,
-      mediasoupStarts,
       subUploads,
       subDownloadsOS,
       subSearchesOS,

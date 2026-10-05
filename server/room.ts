@@ -10,7 +10,6 @@ import {
   readDiscordSession,
 } from "./utils/discordAuth.ts";
 import { redis, redisCount, redisCountDistinct } from "./utils/redis.ts";
-import { getIsSubscriberByEmail } from "./utils/stripe.ts";
 import { type AssignedVM } from "./vm/base.ts";
 import { getStartOfDay } from "./utils/time.ts";
 import { postgres, updateObject, upsertObject } from "./utils/postgres.ts";
@@ -43,7 +42,6 @@ declare module "socket.io" {
   interface Socket {
     clientId: string;
     uid: string;
-    isSub: boolean;
     discordId: string;
     ownerKeyHash: string;
   }
@@ -145,7 +143,7 @@ export class Room {
         typeof ownerKey === "string" && ownerKey ? hashOwnerKey(ownerKey) : "";
       if (postgres) {
         const result = await postgres.query(
-          `SELECT password, owner, "isSubRoom" FROM room where "roomId" = $1`,
+          `SELECT password FROM room where "roomId" = $1`,
           [this.roomId],
         );
         const password = socket.handshake.query?.password;
@@ -156,17 +154,14 @@ export class Room {
           return;
         }
         // Check if room is at capacity
-        const isSubRoom = result.rows[0]?.isSubRoom;
-        const roomCapacity = isSubRoom
-          ? config.ROOM_CAPACITY_SUB
-          : config.ROOM_CAPACITY;
+        const roomCapacity = Number(config.ROOM_CAPACITY);
         if (roomCapacity && this.roster.length >= roomCapacity) {
           next(new Error("This room is full"));
           return;
         }
       }
       // clientId is meant for things that shouldn't require login
-      // Anything sensitive (e.g. subscriber features, room lock) should be validated with uid and require login
+      // Anything sensitive (e.g. room lock) should be validated with uid and require login
       // vbrowser controller, identify chat messages, video chat/screenshare signaling
       // Used as keys for ephemeral room state (e.g. name, picture, timestamp)
 
@@ -254,7 +249,6 @@ export class Room {
 
       socket.clientId = clientId;
       socket.uid = "";
-      socket.isSub = false;
       this.sendOwnership(socket);
 
       // Check if this socket matches this.lock UID
@@ -288,10 +282,6 @@ export class Room {
         if (decoded?.uid) {
           // This socket is now confirmed to be this UID
           socket.uid = decoded?.uid;
-        }
-        const isSubscriber = await getIsSubscriberByEmail(decoded?.email);
-        if (isSubscriber) {
-          socket.isSub = true;
         }
         // Signing in can make this socket the owner of a permanent room
         this.sendOwnership(socket);
@@ -664,9 +654,6 @@ export class Room {
       timestamp: new Date().toISOString(),
       videoTS: socket?.clientId ? this.tsMap[socket.clientId] : undefined,
     };
-    if (socket?.isSub) {
-      chatWithTime.isSub = true;
-    }
     this.chat.push(chatWithTime);
     this.chat = this.chat.splice(-100);
     this.io.of(this.roomId).emit("REC:chat", chatWithTime);
@@ -702,9 +689,6 @@ export class Room {
     redisCount("urlStarts");
     if (config.STREAM_PATH && data?.startsWith(config.STREAM_PATH)) {
       redisCount("streamStarts");
-    }
-    if (config.CONVERT_PATH && data?.startsWith(config.CONVERT_PATH)) {
-      redisCount("convertStarts");
     }
     // If a reddit URL, extract video URL
     if (
@@ -1056,7 +1040,7 @@ export class Room {
   };
 
   private joinScreenSharing = (socket: Socket, raw: unknown) => {
-    const data = raw as { file: boolean; mediasoup?: boolean };
+    const data = raw as { file: boolean };
     if (!data) {
       return;
     }
@@ -1069,22 +1053,11 @@ export class Room {
       );
       return;
     }
-    let mediasoupSuffix = "";
-    if (data?.mediasoup) {
-      // TODO validate the user has permissions to ask for a mediasoup
-      // TODO set up the room on the remote server rather than letting the remote server create
-      mediasoupSuffix =
-        "@" + config.MEDIASOUP_SERVER + "/" + crypto.randomUUID();
-      redisCount("mediasoupStarts");
-    }
     if (data && data.file) {
-      this.cmdHost(socket, "fileshare://" + socket.clientId + mediasoupSuffix);
+      this.cmdHost(socket, "fileshare://" + socket.clientId);
       redisCount("fileShareStarts");
     } else {
-      this.cmdHost(
-        socket,
-        "screenshare://" + socket.clientId + mediasoupSuffix,
-      );
+      this.cmdHost(socket, "screenshare://" + socket.clientId);
       redisCount("screenShareStarts");
     }
     this.io.of(this.roomId).emit("roster", this.getRosterForApp());
@@ -1108,7 +1081,7 @@ export class Room {
       socket.emit("errorMessage", "Invalid vBrowser input");
       return;
     }
-    const { clientId, uid, isSub } = socket;
+    const { clientId, uid } = socket;
     // these checks are skipped if firebase not provided
     if (config.FIREBASE_ADMIN_SDK_CONFIG) {
       const user = await getUser(uid);
@@ -1164,15 +1137,8 @@ export class Room {
         }
       }
     }
-    let isLarge = false;
-    let region = "";
-    // Check if user is subscriber or firebase not configured, if so allow sub options
-    if (isSub || !config.FIREBASE_ADMIN_SDK_CONFIG) {
-      isLarge = data.options?.size === "large";
-      if (data.options?.region) {
-        region = data.options?.region;
-      }
-    }
+    const isLarge = data.options?.size === "large";
+    const region = data.options?.region ?? "";
 
     redisCount("vBrowserStarts");
     this.cmdHost(socket, "vbrowser://");
@@ -1291,7 +1257,7 @@ export class Room {
       socket.emit("errorMessage", "Database is not available");
       return;
     }
-    const { uid, isSub } = socket;
+    const { uid } = socket;
     if (data.undo) {
       await updateObject(
         postgres,
@@ -1301,7 +1267,6 @@ export class Room {
           owner: null,
           vanity: null,
           isChatDisabled: null,
-          isSubRoom: null,
           roomTitle: null,
           roomDescription: null,
           roomTitleColor: null,
@@ -1318,20 +1283,14 @@ export class Room {
           [uid, this.roomId],
         )
       ).rows[0].count;
-      const limit = isSub
-        ? config.SUBSCRIBER_ROOM_LIMIT
-        : config.FREE_ROOM_LIMIT;
-      if (roomCount >= limit) {
-        socket.emit(
-          "errorMessage",
-          `You've exceeded the permanent room limit. Subscribe for additional permanent rooms.`,
-        );
+      const limit = Number(config.PERMANENT_ROOM_LIMIT);
+      if (limit && roomCount >= limit) {
+        socket.emit("errorMessage", "You've reached the permanent room limit.");
         return;
       }
       const roomObj = {
         roomId: this.roomId,
         owner: uid,
-        isSubRoom: isSub,
       };
       let result: QueryResult | null = null;
       result = await upsertObject(postgres, "room", roomObj, {
@@ -1426,21 +1385,18 @@ export class Room {
       return;
     }
     // console.log(owner, vanity, password);
-    const roomObj: any = {
+    const roomObj = {
       roomId: this.roomId,
       password: password,
       isChatDisabled: isChatDisabled,
       mediaPath: mediaPath,
-    };
-    const { isSub, uid } = socket;
-    if (isSub) {
-      // user must be sub to set certain properties
       // If empty vanity, reset to null
-      roomObj.vanity = vanity ?? null;
-      roomObj.roomTitle = roomTitle;
-      roomObj.roomDescription = roomDescription;
-      roomObj.roomTitleColor = roomTitleColor;
-    }
+      vanity: vanity ?? null,
+      roomTitle: roomTitle,
+      roomDescription: roomDescription,
+      roomTitleColor: roomTitleColor,
+    };
+    const { uid } = socket;
     try {
       const query = `UPDATE room
         SET ${Object.keys(roomObj).map((k, i) => `"${k}" = $${i + 1}`)}

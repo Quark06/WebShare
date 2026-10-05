@@ -233,7 +233,7 @@ if (!sql) {
     console.log("PASS room owners survive a restart, and deleting a room removes it from PostgreSQL");
   } finally {
     await stopServer(server);
-    await sql.query("DROP TABLE IF EXISTS room, subscriber, link_account, active_user, vbrowser");
+    await sql.query("DROP TABLE IF EXISTS room, active_user, vbrowser");
     await sql.end();
   }
 }

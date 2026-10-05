@@ -26,8 +26,6 @@ const defaults = {
   NODE_ENV: "", // Usually, you should let process.env.NODE_ENV override this
   FIREBASE_ADMIN_SDK_CONFIG: "", // Optional, for features requiring sign-in/authentication
   FIREBASE_DATABASE_URL: "", // Optional (unused)
-  STRIPE_SECRET_KEY: "", // Optional, for subscriptions
-  STRIPE_PRICE_ID: "", // Optional, your own Stripe subscription price
   VBROWSER_SESSION_SECONDS: 10800, // Number of seconds to allow vbrowsers to run for
   VBROWSER_SESSION_SECONDS_LARGE: 86400, // Number of seconds to allow large vbrowsers to run for
   VM_POOL_RAMP_DOWN_HOURS: "", // Comma separated start/end UTC hours of the ramp down period
@@ -57,30 +55,23 @@ const defaults = {
   BETA_USER_EMAILS: "", // Comma-delimited list of user emails to include in the beta
   CUSTOM_SETTINGS_HOSTNAME: "", // Hostname to send different config settings to client
   STREAM_PATH: "", // Path of server that supports additional video streams
-  CONVERT_PATH: "", // Path of server that supports video conversion
-  ROOM_CAPACITY: 0, // Maximum capacity of a standard room. Set to 0 for unlimited.
-  ROOM_CAPACITY_SUB: 0, // Maximum capacity of a sub room. Set to 0 for unlimited.
+  ROOM_CAPACITY: 0, // Maximum capacity of a room, enforced when PostgreSQL is configured. Set to 0 for unlimited.
   ROOM_ARCHIVE_HOURS: 72, // Hours without visitors before a room leaves the room list; with PostgreSQL its link still restores it
   BUILD_DIRECTORY: "build", // Name of the directory where the built React UI is served from
   VM_MIN_UPTIME_MINUTES: 0, // Number of minutes of the hour VMs must exist for before being eligible for termination
   SHARD: undefined, // Optional, shard ID; omit for a single server
   SHARD_COUNT: 1, // Total web server shards when SHARD is set
-  FREE_ROOM_LIMIT: 1, // The maximum number of rooms a free user can have
-  SUBSCRIBER_ROOM_LIMIT: 20, // The maximum number of rooms a subscriber can have
+  PERMANENT_ROOM_LIMIT: 20, // The maximum number of permanent rooms a user can have. Set to 0 for unlimited.
   VMWORKER_PORT: 3100, // Port to use for the vmWorker HTTP server
   VM_ASSIGNMENT_TIMEOUT: 75, // Number of seconds to wait for a VM before failing
   DISCORD_BOT_TOKEN: "", // Optional, your own bot that generates WebShare links
   DISCORD_SITE_URL: "", // Public WebShare origin for generated room links
   DISCORD_API_URL: "", // WebShare API origin; defaults to DISCORD_SITE_URL
-  DISCORD_ADMIN_BOT_TOKEN: "", // Optional, for Discord bot to set subscriber roles
-  DISCORD_ADMIN_BOT_SERVER_ID: "", // Optional, your own Discord server ID
-  DISCORD_ADMIN_BOT_SUB_ROLE_ID: "", // Optional, your own subscriber role ID
   DISCORD_AUTH_CLIENT_ID: "", // Optional, Discord OAuth app for the site-wide login gate
   DISCORD_AUTH_CLIENT_SECRET: "", // Server-only secret of that app; also derives the session signing key
   DISCORD_AUTH_GUILD_ID: "", // Discord server ID(s) allowed in, comma-separated; the gate is on when ID, secret and guild are set
   DISCORD_AUTH_REDIRECT_URI: "", // Optional, defaults to <site origin>/auth/discord/callback
   DISCORD_AUTH_SESSION_DAYS: 30, // Days a login is remembered; renewed while in use
-  MEDIASOUP_SERVER: "", // Optional, URL of the MediaSoup server to broadcast to for larger screen/file shares
   TWITCH_PROXY_PATH: "", // Optional, URL of the server that can proxy twitch HLS stream playlists and segments
   VBROWSER_ADMIN_KEY: "", // Optional, the key to hit admin endpoints on the vbrowser
   OPENSUBTITLES_KEY: "", // Optional, key to OpenSubtitles API

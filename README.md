@@ -9,8 +9,7 @@ WebShare is a self-hosted website for synchronized video watching, Bilibili live
 - Synchronizes the video being watched with the current room
 - Plays, pauses, and seeks are synced to all watchers
 - Supports:
-  - Screen sharing (full screen, browser tab or application)
-  - Launch a shared virtual browser with a separately configured service
+  - Screen sharing and a shared virtual browser are being rebuilt; their buttons show an under-construction notice for now
   - Stream-your-own-file
   - Video files on the Internet (anything accessible via HTTP)
   - YouTube videos
@@ -148,7 +147,9 @@ Run `npm run test:discord-auth` for offline checks; the script does not contact 
 
 Login is disabled by default. Use your own Firebase project; no upstream account or analytics service is configured.
 
-This project uses Firebase for authentication. This is used for user login, account management, subscriptions, and handling some features like room locking/permanence.
+This project uses Firebase for authentication. This is used for user login, account management, and handling some features like room locking/permanence.
+
+Every signed-in user gets the same features; there are no subscriptions or paid tiers. A signed-in user can make up to `PERMANENT_ROOM_LIMIT` rooms permanent (default 20; 0 removes the limit), and the owner of a permanent room can set its password, custom URL, title, description and title color. `ROOM_CAPACITY` caps the number of people in a room when PostgreSQL is configured (default 0, unlimited).
 
 To set up, create a new Firebase app (or reuse an old one) from [here](https://console.firebase.google.com/). After creating an application, click on the settings cog icon in the left menu next to "Project overview" and click on project settings. From there, scroll down, create a web application and copy the Firebase SDK configuration snippet JSON data.
 
@@ -157,6 +158,8 @@ Next, you have to stringify it: `JSON.stringify(PASTE_CONFIG_HERE)` in your brow
 For server verification of accounts you'll also need `FIREBASE_ADMIN_SDK_CONFIG`, which you should do the same steps for.
 
 ### Virtual Browser Setup
+
+The **VBrowser** button in rooms currently shows an under-construction notice. The server-side support and the setup below are kept for when it returns.
 
 This project supports creating virtual browsers (using https://github.com/m1k1o/neko) either on a cloud provider or with Docker containers. For development, Docker is easiest.
 
@@ -198,11 +201,11 @@ The English text is the translation key: wrap new interface text in `t()` from `
 
 ## Optional integrations
 
-Discord account linking requires your own `VITE_DISCORD_CLIENT_ID`; redirects default to the current site origin. To run your own room-creation bot, set `DISCORD_BOT_TOKEN` and `DISCORD_SITE_URL`, optionally `DISCORD_API_URL`, then run `node server/discordBot.ts`.
+To run your own room-creation bot, set `DISCORD_BOT_TOKEN` and `DISCORD_SITE_URL`, optionally `DISCORD_API_URL`, then run `node server/discordBot.ts`.
 
-Subscriptions are disabled unless both `STRIPE_SECRET_KEY` and your own `STRIPE_PRICE_ID` are configured. Prices are displayed by your Stripe checkout. Optional workers and virtual browser infrastructure must be configured separately.
+Optional workers and virtual browser infrastructure must be configured separately.
 
-Screen/file sharing and video chat use a public STUN server by default. For networks that require a TURN relay, configure your own `VITE_ICE_SERVERS` JSON array and rebuild. These settings are visible to clients. Docker builds accept the same `--build-arg`.
+File sharing and video chat use a public STUN server by default. For networks that require a TURN relay, configure your own `VITE_ICE_SERVERS` JSON array and rebuild. These settings are visible to clients. Docker builds accept the same `--build-arg`.
 
 Browser settings, names, identifiers and saved room passwords use WebShare's own `webshare-*` storage keys.
 

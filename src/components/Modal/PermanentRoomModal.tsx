@@ -8,9 +8,7 @@ export const PermanentRoomModal = (props: { closeModal: () => void }) => {
   return (
     <Modal opened onClose={closeModal} title={t("Permanent Rooms")}>
       <div>
-        {t(
-          "Registered users have the ability to make their rooms permanent. Subscribed users can create multiple permanent rooms.",
-        )}
+        {t("Registered users have the ability to make their rooms permanent.")}
       </div>
       <Table striped>
         <Table.Thead>
@@ -49,17 +47,12 @@ export const PermanentRoomModal = (props: { closeModal: () => void }) => {
             </Table.Td>
           </Table.Tr>
           <Table.Tr>
-            <Table.Td>{t("Custom Room URLs (subscribers)")}</Table.Td>
+            <Table.Td>{t("Custom Room URLs")}</Table.Td>
             <Table.Td></Table.Td>
             <Table.Td>
               <IconCheck />
             </Table.Td>
           </Table.Tr>
-          {/* <Table.Tr>
-                  <Table.Td>Max Room Capacity (subscribers)</Table.Td>
-                    <Table.Td>20</Table.Td>
-                    <Table.Td>100</Table.Td>
-                  </Table.Tr> */}
         </Table.Tbody>
       </Table>
     </Modal>
