@@ -1,5 +1,7 @@
 ## October 2026 (WebShare)
 
+- Added an optional site-wide Discord login gate that admits members of configured Discord servers, fills in their server nickname and avatar, and remembers logins for 30 days.
+
 - Added music search and song-link playback for NetEase Music, QQ Music, KuGou and Kuwo through Meting.
 - Added music playlist import into the existing room queue without interrupting the current media.
 - Added a music stage with artwork, track information and a preview-only indicator.

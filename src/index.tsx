@@ -15,6 +15,10 @@ import "firebase/auth";
 import { serverPath, softWhite } from "./utils/utils";
 import { Create } from "./components/Create/Create";
 import { Discord } from "./components/Discord/Discord";
+import {
+  DiscordLogin,
+  discordLoginKey,
+} from "./components/DiscordLogin/DiscordLogin";
 import config from "./config";
 import { DEFAULT_STATE, MetadataContext } from "./MetadataContext";
 import { createTheme, MantineProvider } from "@mantine/core";
@@ -32,8 +36,12 @@ if (firebaseConfig) {
 }
 
 class WebShare extends React.Component {
-  public state = DEFAULT_STATE;
+  public state = {
+    ...DEFAULT_STATE,
+    discordGate: "loading" as "loading" | "ok" | "required",
+  };
   async componentDidMount() {
+    this.loadDiscordSession();
     if (firebaseConfig) {
       firebase.auth().onAuthStateChanged(async (user: firebase.User | null) => {
         if (user) {
@@ -60,7 +68,32 @@ class WebShare extends React.Component {
       });
     }
   }
+  loadDiscordSession = async () => {
+    try {
+      const response = await window.fetch(serverPath + "/auth/session");
+      const data = await response.json();
+      if (data.user) {
+        window.localStorage.setItem(discordLoginKey, "1");
+        window.sessionStorage.removeItem(discordLoginKey);
+      }
+      this.setState({
+        discordGate: data.enabled && !data.user ? "required" : "ok",
+        discordUser: data.user ?? undefined,
+      });
+    } catch (e) {
+      // The server enforces the gate; keep the app usable if this check fails
+      console.warn(e);
+      this.setState({ discordGate: "ok" });
+    }
+  };
   render() {
+    if (this.state.discordGate !== "ok") {
+      return (
+        <MantineProvider theme={theme} forceColorScheme="dark">
+          {this.state.discordGate === "required" && <DiscordLogin />}
+        </MantineProvider>
+      );
+    }
     return (
       // <React.StrictMode>
       <MantineProvider theme={theme} forceColorScheme="dark">

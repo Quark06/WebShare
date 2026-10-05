@@ -120,6 +120,29 @@ Services using the same protocol can be replaced through configuration. For a di
 
 Run `npm run test:resolvers` for offline functional checks with local fixtures; the script does not contact public services or download media.
 
+### Discord login gate
+
+Off by default. When enabled, visitors must log in with Discord and belong to one of your Discord servers before they can see pages, call the APIs or join rooms. `/ping` stays open for health checks.
+
+1. Create an application in the [Discord Developer Portal](https://discord.com/developers/applications). Its name and icon appear on Discord's authorization page.
+2. Under **OAuth2**, copy the Client ID and Client Secret, and add `https://<your site>/auth/discord/callback` to **Redirects**.
+3. Enable Developer Mode in Discord's settings, right-click your server and choose **Copy Server ID**.
+4. Add the values to the server `.env` and restart; no frontend rebuild is needed:
+
+```dotenv
+DISCORD_AUTH_CLIENT_ID=
+DISCORD_AUTH_CLIENT_SECRET=
+DISCORD_AUTH_GUILD_ID=123456789012345678
+```
+
+The authorization page requests `identify` (username and avatar) and `guilds.members.read` (member details in servers). WebShare checks only the configured servers and never reads the user's full server list. Separate several server IDs with commas; membership in any of them is enough. When a user has no saved name, their room name and avatar default to their server nickname and avatar, falling back to their Discord account.
+
+Membership is checked at login. A login lasts 30 days from sign-in (`DISCORD_AUTH_SESSION_DAYS`) and is kept in an HttpOnly cookie. When it expires, a browser that logged in before goes through Discord again automatically: Discord skips its authorization page for accounts that already authorized the application, and membership is checked again. A user who leaves or is removed from the server keeps access until their current login expires. Sessions are signed with a key derived from the Client Secret, so resetting the secret signs everyone out. Discord tokens aren't stored.
+
+The callback URL defaults to the site address the browser used, honoring `X-Forwarded-Proto` behind Nginx; set `DISCORD_AUTH_REDIRECT_URI` when it has to differ. The gate needs the pages and API on one origin, as in the default deployment; if `VITE_SERVER_HOST` points elsewhere, the login cookie isn't sent. The cookie isn't sent to the server port during `npm run ui` development either, so test the gate with `npm run build` and `npm start` (or `npm run preview`) at `http://localhost:8080`, and add `http://localhost:8080/auth/discord/callback` to the application's redirects. A room-creation bot (`node server/discordBot.ts`) using the same `.env` signs its own session, so its `/watch` command keeps working.
+
+Run `npm run test:discord-auth` for offline checks; the script does not contact Discord.
+
 ### Firebase Config (user authentication)
 
 Login is disabled by default. Use your own Firebase project; no upstream account or analytics service is configured.

@@ -81,6 +81,16 @@ METING_API_PLATFORMS=netease,tencent
 
 视频、直播、音乐可分别将对应选择器（Resolver Selector）改为 `local`，恢复原链路。第三方 Meting 默认只用于网易云（NetEase）和 QQ 音乐（QQ Music）；酷狗（KuGou）和酷我（Kuwo）继续使用本地 Meting。兼容服务更换时修改上述地址和支持的平台列表（Platform List），无需改动播放器。B 站搜索仍由原接口提供。平台登录凭据（Cookie）不会发送给第三方，第三方失败时不自动追加原平台请求。详见 [第三方解析配置](../README.zh-CN.md#可选第三方解析third-party-resolvers)。
 
+如需只允许指定 Discord 服务器的成员使用，可启用 Discord 登录拦截（Login Gate）。在 Discord 开发者门户中，将 `https://<你的域名>/auth/discord/callback` 添加到应用 OAuth2 设置的 Redirects，然后在 `.env` 中填写：
+
+```dotenv
+DISCORD_AUTH_CLIENT_ID=
+DISCORD_AUTH_CLIENT_SECRET=
+DISCORD_AUTH_GUILD_ID=123456789012345678
+```
+
+三项都填写后才会启用，修改后重启服务即可。下文的 Nginx 配置已转发 `X-Forwarded-Proto`，回调地址会使用 HTTPS，登录 Cookie 也会带上 `Secure`。拦截要求页面与接口部署在同一域名下。详见 [Discord 登录拦截](../README.zh-CN.md#discord-登录拦截login-gate)。
+
 ### 2.3 构建和启动
 
 ```bash
@@ -267,6 +277,7 @@ npm exec -- pm2 status
 3. 播放普通 B 站视频、B 站直播和音乐，确认真实音视频解码（Audio/Video Decoding），而非仅成功返回播放地址。
 4. B 站直播显示 LIVE，未开播直播间显示明确提示；普通视频可跳转进度（Seek）。
 5. 查看浏览器网络请求（Network Requests），确认 B 站及音乐媒体来自平台 CDN，并检查服务器日志是否有解析错误。
+6. 如启用 Discord 登录拦截：未登录的浏览器访问房间地址时显示登录页；服务器成员授权后回到原房间，非成员看到拦截提示；`/ping` 仍可直接访问。
 
 部署脚本和本机运行验证不等于公网部署验收。Linux 上的 Nginx、HTTPS 证书、Docker 镜像实际构建，以及不同网络观看者的可用性，应以目标服务器上的测试结果为准。
 

@@ -97,6 +97,12 @@ interface LinkAccount {
   kind: string;
 }
 
+interface DiscordUser {
+  id: string;
+  name: string;
+  avatarUrl?: string;
+}
+
 interface ShardMetric {
   uptime: number;
   mem: number;

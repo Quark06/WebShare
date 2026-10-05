@@ -4,6 +4,10 @@ import { isMusic } from "../src/utils/music.ts";
 import axios from "axios";
 import { Server, Socket } from "socket.io";
 import { getUser, validateUserToken } from "./utils/firebase.ts";
+import {
+  isDiscordAuthEnabled,
+  readDiscordSession,
+} from "./utils/discordAuth.ts";
 import { redis, redisCount, redisCountDistinct } from "./utils/redis.ts";
 import { getIsSubscriberByEmail } from "./utils/stripe.ts";
 import { type AssignedVM } from "./vm/base.ts";
@@ -110,6 +114,13 @@ export class Room {
     }, 1000);
 
     io.of(roomId).use(async (socket, next) => {
+      if (
+        isDiscordAuthEnabled() &&
+        !readDiscordSession(socket.handshake.headers.cookie)
+      ) {
+        next(new Error("discord_auth"));
+        return;
+      }
       if (postgres) {
         const result = await postgres.query(
           `SELECT password, owner, "isSubRoom" FROM room where "roomId" = $1`,

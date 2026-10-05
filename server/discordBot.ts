@@ -2,6 +2,9 @@ import { Client, IntentsBitField, Events } from "discord.js";
 import config from "./config.ts";
 import axios from "axios";
 import { redisCount } from "./utils/redis.ts";
+import { isDiscordAuthEnabled, sessionToken } from "./utils/discordAuth.ts";
+
+const botUser: DiscordUser = { id: "discord-bot", name: "Discord bot" };
 
 const HOST_NAME = config.DISCORD_SITE_URL.replace(/\/$/, "");
 if (!HOST_NAME || !config.DISCORD_BOT_TOKEN) {
@@ -24,9 +27,14 @@ client.on(Events.InteractionCreate, async (interaction) => {
   if (interaction.commandName === "watch") {
     const preload = interaction.options.get("video")?.value;
     // Call the WebShare API to make a room
-    const response = await axios.post(API_NAME + "/createRoom", {
-      video: preload,
-    });
+    const response = await axios.post(
+      API_NAME + "/createRoom",
+      { video: preload },
+      isDiscordAuthEnabled()
+        ? // Sign a service session so the site-wide login gate lets the bot through
+          { headers: { Cookie: "webshare_session=" + sessionToken(botUser) } }
+        : undefined,
+    );
     redisCount("discordBotWatch");
     // Return the generated room URL
     await interaction.reply({
