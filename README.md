@@ -172,6 +172,8 @@ This project supports creating virtual browsers (using https://github.com/m1k1o/
 
 Rooms outlive their visitors. When the last viewer leaves, or the server restarts, the room keeps its media, playlist, chat and playback position and stops playing. The next visitor finds it paused at that position and presses play to continue. Screen and file shares end when their room empties.
 
+The room owner can delete the room with **Delete Room** in the room toolbar, after confirming. Deleting disconnects everyone and removes the room, its playlist and chat for good. The owner is the browser that created the room. With the Discord login gate, the creator's Discord account is the owner too, on any device. With Firebase, so is the owner of a permanent room. The creating browser keeps a secret owner key in local storage (`webshare-owner-keys`), and the server stores only its hash. Rooms created before this feature, or by the Discord bot, have no owner and can't be deleted this way.
+
 **Join Room**, next to **New Room** on the home page and in the top bar, lists the rooms anyone can join. Each entry shows the room's title, current media, viewers and last activity, and a lock for password-protected rooms. Rooms with no visitors for 72 hours (`ROOM_ARCHIVE_HOURS`) are archived and leave the list. With PostgreSQL, an archived room's link still opens it with its progress intact, and the room returns to the list. Without PostgreSQL, rooms live in memory: a restart clears them, and archiving deletes them.
 
 The optional `server/cleanup.ts` maintenance script only removes rooms that never saved any state, so archived rooms stay restorable.

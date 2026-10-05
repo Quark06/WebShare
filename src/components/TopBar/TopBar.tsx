@@ -1,5 +1,10 @@
 import React, { useCallback, useContext, useState } from "react";
-import { serverPath, getUserImage, softWhite } from "../../utils/utils";
+import {
+  serverPath,
+  getUserImage,
+  setOwnerKey,
+  softWhite,
+} from "../../utils/utils";
 import { ActionIcon, Avatar, Button, Menu, Text } from "@mantine/core";
 import firebase from "firebase/compat/app";
 import "firebase/compat/auth";
@@ -43,7 +48,8 @@ export async function createRoom(
     }),
   });
   const data = await response.json();
-  const { name } = data;
+  const { name, ownerKey } = data;
+  setOwnerKey(name, ownerKey);
   if (openNewTab) {
     window.open("/watch" + name);
   } else {

@@ -1,5 +1,6 @@
 ## October 2026 (WebShare)
 
+- Room owners can delete their room from the room toolbar after confirming; everyone is disconnected and the room is removed.
 - Rooms now outlive their visitors: an empty or restarted room stops at its playback position and waits for the next visitor to press play.
 - Added Join Room, a list of joinable rooms with their current media, viewers and last activity; rooms with no visitors for 72 hours are archived, and with PostgreSQL their links still restore them.
 

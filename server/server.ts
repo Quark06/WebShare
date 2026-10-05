@@ -21,7 +21,7 @@ import {
   getMusicLyrics,
   parseMusicPlatform,
 } from "./utils/music.ts";
-import { Room } from "./room.ts";
+import { Room, hashOwnerKey } from "./room.ts";
 import { redis, redisCount } from "./utils/redis.ts";
 import {
   getCustomerByEmail,
@@ -526,13 +526,20 @@ app.post("/createRoom", async (req, res) => {
   }
   const decoded = await validateUserToken(req.body?.uid, req.body?.token);
   newRoom.creator = decoded?.email;
+  // The creating browser keeps the owner key; with the login gate, the Discord account is the owner too
+  const ownerKey = crypto.randomBytes(24).toString("base64url");
+  newRoom.ownerKeyHash = hashOwnerKey(ownerKey);
+  if (isDiscordAuthEnabled()) {
+    newRoom.ownerDiscordId = readDiscordSession(req.headers.cookie)?.id;
+  }
   const preload = (req.body?.video || "").slice(0, 20000);
   if (preload) {
     redisCount("createRoomPreload");
     newRoom.video = preload;
     newRoom.paused = true;
-    await newRoom.saveRoom();
   }
+  // Save right away so the owner survives a restart before anyone joins
+  await newRoom.saveRoom();
   const prePlaylist = Array.isArray(req.body?.playlist) && req.body?.playlist;
   if (prePlaylist) {
     for (let item of req.body.playlist) {
@@ -540,7 +547,7 @@ app.post("/createRoom", async (req, res) => {
     }
   }
   rooms.set(name, newRoom);
-  res.json({ name });
+  res.json({ name, ownerKey });
 });
 
 app.post("/checkoutSub", async (req, res) => {
@@ -726,7 +733,10 @@ app.get("/rooms", async (_req, res) => {
     });
   }
   for (const [roomId, room] of rooms) {
-    if (!room.roster.length && room.lastUpdateTime < since) {
+    if (
+      room.isDeleted ||
+      (!room.roster.length && room.lastUpdateTime < since)
+    ) {
       continue;
     }
     list.set(roomId, {
@@ -934,6 +944,12 @@ async function saveRooms() {
   const start = Date.now();
   await Promise.all(
     Array.from(rooms.entries()).map(async ([key, room]) => {
+      if (room.isDeleted) {
+        room.destroy();
+        rooms.delete(key);
+        io._nsps.delete(key);
+        return;
+      }
       if (
         room.roster.length === 0 &&
         !room.vBrowser &&

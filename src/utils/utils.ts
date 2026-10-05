@@ -342,6 +342,32 @@ export function addAndSavePassword(roomId: string, password: string) {
   );
 }
 
+// Owner keys of rooms this browser created; the server only lets their holder delete the room
+function getOwnerKeys(): Record<string, string> {
+  try {
+    return JSON.parse(
+      window.localStorage.getItem("webshare-owner-keys") ?? "{}",
+    );
+  } catch (e) {
+    console.warn("[ALERT] Could not parse saved owner keys");
+  }
+  return {};
+}
+
+export function getOwnerKey(roomId: string): string | undefined {
+  return getOwnerKeys()[roomId];
+}
+
+export function setOwnerKey(roomId: string, key: string | undefined) {
+  const keys = getOwnerKeys();
+  if (key) {
+    keys[roomId] = key;
+  } else {
+    delete keys[roomId];
+  }
+  window.localStorage.setItem("webshare-owner-keys", JSON.stringify(keys));
+}
+
 export function getSavedPasswords(): Record<string, string> {
   try {
     const savedPasswordsString =

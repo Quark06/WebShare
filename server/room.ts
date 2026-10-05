@@ -1,4 +1,5 @@
 import config from "./config.ts";
+import { createHash } from "node:crypto";
 import { getMusicPlaylist, getMusicTrack } from "./utils/music.ts";
 import { isMusic } from "../src/utils/music.ts";
 import axios from "axios";
@@ -43,7 +44,14 @@ declare module "socket.io" {
     clientId: string;
     uid: string;
     isSub: boolean;
+    discordId: string;
+    ownerKeyHash: string;
   }
+}
+
+// The owner key is a secret only the creating browser holds, so only its hash is kept
+export function hashOwnerKey(key: string) {
+  return createHash("sha256").update(key).digest("hex");
 }
 
 export class Room {
@@ -62,6 +70,8 @@ export class Room {
   public lock: string | undefined = undefined; // uid of the user who locked the room
   public playlist: PlaylistVideo[] = [];
   public videoInfo: PlaylistVideo | undefined = undefined; // title and artwork of the current media, for the room list
+  public ownerDiscordId: string | undefined = undefined; // Discord account that created the room, when the login gate is on
+  public ownerKeyHash: string | undefined = undefined; // hash of the owner key given to the creating browser
 
   // Non-serialized state
   public roomId: string;
@@ -73,6 +83,7 @@ export class Room {
   private tsInterval: NodeJS.Timeout | undefined = undefined;
   public isChatDisabled: boolean | undefined = undefined;
   public lastUpdateTime: Date = new Date();
+  public isDeleted = false;
   private preventTSUpdate = false;
   // Not really a queue since there's no ordering, we just retry as long as this is set
   // If we want a real queue then we need external processing of the jobs and a way to update the room from outside
@@ -117,13 +128,21 @@ export class Room {
     }, 1000);
 
     io.of(roomId).use(async (socket, next) => {
-      if (
-        isDiscordAuthEnabled() &&
-        !readDiscordSession(socket.handshake.headers.cookie)
-      ) {
+      if (this.isDeleted) {
+        next(new Error("This room was deleted."));
+        return;
+      }
+      const discordUser = isDiscordAuthEnabled()
+        ? readDiscordSession(socket.handshake.headers.cookie)
+        : undefined;
+      if (isDiscordAuthEnabled() && !discordUser) {
         next(new Error("discord_auth"));
         return;
       }
+      socket.discordId = discordUser?.id ?? "";
+      const ownerKey = socket.handshake.auth?.ownerKey;
+      socket.ownerKeyHash =
+        typeof ownerKey === "string" && ownerKey ? hashOwnerKey(ownerKey) : "";
       if (postgres) {
         const result = await postgres.query(
           `SELECT password, owner, "isSubRoom" FROM room where "roomId" = $1`,
@@ -236,6 +255,7 @@ export class Room {
       socket.clientId = clientId;
       socket.uid = "";
       socket.isSub = false;
+      this.sendOwnership(socket);
 
       // Check if this socket matches this.lock UID
       const validateLock = () => {
@@ -273,6 +293,8 @@ export class Room {
         if (isSubscriber) {
           socket.isSub = true;
         }
+        // Signing in can make this socket the owner of a permanent room
+        this.sendOwnership(socket);
       });
       socket.on("CMD:host", (data: unknown) => {
         validateLock() && this.startHosting(socket, String(data));
@@ -379,6 +401,16 @@ export class Room {
       socket.on("CMD:playlistClear", () => {
         validateLock() && this.playlistClear();
       });
+      socket.on("CMD:deleteRoom", async () => {
+        if (!(await this.isOwner(socket))) {
+          socket.emit(
+            "errorMessage",
+            "Only the room owner can delete this room.",
+          );
+          return;
+        }
+        await this.deleteRoom();
+      });
       socket.on("CMD:kickUser", async (data: unknown) => {
         (await validateOwner()) && this.kickUser(data);
       });
@@ -428,6 +460,8 @@ export class Room {
       playlist: this.playlist,
       loop: this.loop,
       videoInfo: this.videoInfo,
+      ownerDiscordId: this.ownerDiscordId,
+      ownerKeyHash: this.ownerKeyHash,
     });
   };
 
@@ -471,10 +505,16 @@ export class Room {
     if (roomObj.videoInfo) {
       this.videoInfo = roomObj.videoInfo;
     }
+    if (roomObj.ownerDiscordId) {
+      this.ownerDiscordId = roomObj.ownerDiscordId;
+    }
+    if (roomObj.ownerKeyHash) {
+      this.ownerKeyHash = roomObj.ownerKeyHash;
+    }
   };
 
   public saveRoom = async () => {
-    if (postgres) {
+    if (postgres && !this.isDeleted) {
       try {
         const roomString = this.serialize();
         await postgres.query(
@@ -1473,6 +1513,9 @@ export class Room {
 
   // Keep the position but stop playback so the next visitor continues from here
   private stopWhenEmpty = () => {
+    if (this.isDeleted) {
+      return;
+    }
     if (this.getSharerId()) {
       // Screen and file shares end with their sharer
       this.video = "";
@@ -1482,6 +1525,42 @@ export class Room {
     this.paused = true;
     this.lastUpdateTime = new Date();
     this.saveRoom();
+  };
+
+  // The creator's Discord account or browser, or the owner of a permanent room
+  private isOwner = async (socket: Socket) => {
+    if (this.ownerDiscordId && socket.discordId === this.ownerDiscordId) {
+      return true;
+    }
+    if (this.ownerKeyHash && socket.ownerKeyHash === this.ownerKeyHash) {
+      return true;
+    }
+    if (!socket.uid || !postgres) {
+      return false;
+    }
+    const result = await postgres.query(
+      `SELECT owner FROM room WHERE "roomId" = $1`,
+      [this.roomId],
+    );
+    const owner = result.rows[0]?.owner;
+    return Boolean(owner) && owner === socket.uid;
+  };
+
+  private sendOwnership = async (socket: Socket) => {
+    socket.emit("REC:isOwner", await this.isOwner(socket));
+  };
+
+  // Disconnects everyone and removes the room; server.ts drops it from memory on its next save pass
+  public deleteRoom = async () => {
+    this.isDeleted = true;
+    if (this.vBrowser) {
+      await this.stopVBrowserInternal();
+    }
+    await postgres?.query(`DELETE FROM room WHERE "roomId" = $1`, [
+      this.roomId,
+    ]);
+    this.io.of(this.roomId).emit("roomDeleted");
+    this.io.of(this.roomId).disconnectSockets(true);
   };
 
   private loadVideoInfo = async (url: string) => {

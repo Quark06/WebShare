@@ -26,6 +26,8 @@ import {
   createUuid,
   softWhite,
   getSavedPasswords,
+  getOwnerKey,
+  setOwnerKey,
 } from "../../utils/utils";
 import { generateName } from "../../utils/generateName";
 import { Chat } from "../Chat/Chat";
@@ -40,6 +42,7 @@ import { Controls } from "../Controls/Controls";
 import { VBrowserModal } from "../Modal/VBrowserModal";
 import { SettingsModal } from "../Settings/SettingsModal";
 import { ErrorModal } from "../Modal/ErrorModal";
+import { DeleteRoomModal } from "../Modal/DeleteRoomModal";
 import { PasswordModal } from "../Modal/PasswordModal";
 import { ScreenShareModal } from "../Modal/ScreenShareModal";
 import { FileShareModal } from "../Modal/FileShareModal";
@@ -143,6 +146,9 @@ interface AppState {
   }[];
   overlayMsg: string;
   isErrorAuth: boolean;
+  isRoomOwner: boolean;
+  isDeleteRoomOpen: boolean;
+  roomDeleted: boolean;
   settings: Settings;
   vBrowserResolution: string;
   vBrowserQuality: string;
@@ -212,6 +218,9 @@ export class App extends React.Component<AppProps, AppState> {
     fileSelection: [],
     overlayMsg: "",
     isErrorAuth: false,
+    isRoomOwner: false,
+    isDeleteRoomOpen: false,
+    roomDeleted: false,
     settings: {},
     vBrowserResolution: "1280x720@30",
     vBrowserQuality: "1",
@@ -347,6 +356,7 @@ export class App extends React.Component<AppProps, AppState> {
       },
       auth: {
         sessionId: getOrCreateSessionId(),
+        ownerKey: getOwnerKey(roomId),
       },
     });
     this.socket = socket;
@@ -389,6 +399,10 @@ export class App extends React.Component<AppProps, AppState> {
       }
     });
     socket.on("disconnect", (reason) => {
+      if (this.state.roomDeleted) {
+        // The room deleted message is already showing
+        return;
+      }
       if (reason === "io server disconnect") {
         // the disconnection was initiated by the server, you need to reconnect manually
         this.setState({ overlayMsg: "Disconnected from server." });
@@ -412,6 +426,17 @@ export class App extends React.Component<AppProps, AppState> {
     });
     socket.on("kicked", () => {
       window.location.assign("/");
+    });
+    socket.on("REC:isOwner", (isOwner: boolean) => {
+      this.setState({ isRoomOwner: Boolean(isOwner) });
+    });
+    socket.on("roomDeleted", () => {
+      setOwnerKey(roomId, undefined);
+      this.setState({
+        roomDeleted: true,
+        isDeleteRoomOpen: false,
+        overlayMsg: "This room was deleted.",
+      });
     });
     socket.on("REC:play", () => {
       this.localPlay();
@@ -2184,6 +2209,15 @@ export class App extends React.Component<AppProps, AppState> {
         )}
         {this.state.overlayMsg && <ErrorModal error={this.state.overlayMsg} />}
         {this.state.isErrorAuth && <PasswordModal roomId={this.state.roomId} />}
+        {this.state.isDeleteRoomOpen && (
+          <DeleteRoomModal
+            onClose={() => this.setState({ isDeleteRoomOpen: false })}
+            onConfirm={() => {
+              this.setState({ isDeleteRoomOpen: false });
+              this.socket.emit("CMD:deleteRoom");
+            }}
+          />
+        )}
         <SettingsModal
           modalOpen={this.state.settingsModalOpen}
           setModalOpen={this.setSettingsModalOpen}
@@ -2538,6 +2572,18 @@ export class App extends React.Component<AppProps, AppState> {
                           )}
                         </Menu.Dropdown>
                       </Menu>
+                      {this.state.isRoomOwner && (
+                        <Button
+                          color="red"
+                          onClick={() =>
+                            this.setState({ isDeleteRoomOpen: true })
+                          }
+                          leftSection={<IconTrash />}
+                          className={styles.shareButton}
+                        >
+                          Delete Room
+                        </Button>
+                      )}
                     </div>
                   </React.Fragment>
                 )}

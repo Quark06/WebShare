@@ -21,7 +21,18 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 async function startServer(env) {
   const child = spawn(process.execPath, ["server/server.ts"], {
     cwd: root,
-    env: { ...process.env, PORT: String(port), HOST: "127.0.0.1", NODE_ENV: "production", DATABASE_URL: "", ...env },
+    // Override settings a local .env may set, so each run only uses what it passes in
+    env: {
+      ...process.env,
+      PORT: String(port),
+      HOST: "127.0.0.1",
+      NODE_ENV: "production",
+      DATABASE_URL: "",
+      DISCORD_AUTH_CLIENT_ID: "",
+      DISCORD_AUTH_CLIENT_SECRET: "",
+      DISCORD_AUTH_GUILD_ID: "",
+      ...env,
+    },
     stdio: ["ignore", "pipe", "pipe"],
   });
   let log = "";
@@ -43,15 +54,19 @@ async function stopServer(server) {
   await exited;
 }
 const nextEvent = (socket, name) => new Promise((resolve) => socket.once(name, resolve));
-function enter(room) {
+function enter(room, { ownerKey, cookie } = {}) {
   return new Promise((resolve, reject) => {
     const socket = io(base + room, {
+      // Each visitor needs its own connection, query and headers, like a separate browser
+      forceNew: true,
       transports: ["websocket"],
       reconnection: false,
       query: { clientId: crypto.randomUUID(), roomId: room.slice(1) },
-      auth: { sessionId: crypto.randomUUID() },
+      auth: { sessionId: crypto.randomUUID(), ownerKey },
+      extraHeaders: cookie ? { Cookie: cookie } : {},
     });
-    socket.once("REC:host", (host) => resolve({ socket, host }));
+    const isOwner = nextEvent(socket, "REC:isOwner");
+    socket.once("REC:host", (host) => resolve({ socket, host, isOwner }));
     socket.once("connect_error", reject);
   });
 }
@@ -72,6 +87,8 @@ const listRooms = async () => (await fetch(base + "/rooms")).json();
 const findRoom = async (room) => (await listRooms()).rooms.find((r) => r.roomId === room);
 const createRoom = async (body = {}) =>
   (await (await fetch(base + "/createRoom", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })).json()).name;
+const createOwnedRoom = async (headers = {}) =>
+  (await fetch(base + "/createRoom", { method: "POST", headers })).json();
 const position = (host) => [host.video, host.paused, host.videoTS];
 
 let sql;
@@ -122,6 +139,27 @@ try {
   assert.deepEqual(position(d.host).slice(0, 2), [movie, true]);
   await leave(d);
   console.log("PASS media started in an empty room waits for a viewer to press play");
+
+  const owned = await createOwnedRoom();
+  assert.ok(owned.ownerKey);
+  const owner = await enter(owned.name, { ownerKey: owned.ownerKey });
+  const guest = await enter(owned.name);
+  assert.deepEqual([await owner.isOwner, await guest.isOwner], [true, false]);
+  const refused = nextEvent(guest.socket, "errorMessage");
+  guest.socket.emit("CMD:deleteRoom");
+  assert.equal(await refused, "Only the room owner can delete this room.");
+  assert.ok(await findRoom(owned.name));
+  const deleted = Promise.all([
+    nextEvent(owner.socket, "roomDeleted"),
+    nextEvent(guest.socket, "roomDeleted"),
+    nextEvent(guest.socket, "disconnect"),
+  ]);
+  owner.socket.emit("CMD:deleteRoom");
+  assert.equal((await deleted)[2], "io server disconnect");
+  assert.equal(await findRoom(owned.name), undefined);
+  await sleep(1200);
+  await assert.rejects(enter(owned.name), /Invalid namespace/);
+  console.log("PASS only the owner can delete a room, which disconnects everyone and removes it");
 } finally {
   await stopServer(server);
 }
@@ -178,10 +216,47 @@ if (!sql) {
     const titled = await findRoom(room);
     assert.deepEqual([titled.locked, titled.title, titled.vanity], [true, "Movie night", "movies"]);
     console.log("PASS unused rooms are hidden; titles, vanity links and passwords are reported");
+
+    // Nobody joins before the restart, so the owner must be saved when the room is created
+    const owned = await createOwnedRoom();
+    await stopServer(server);
+    server = await startServer({ DATABASE_URL: databaseUrl });
+    const owner = await enter(owned.name, { ownerKey: owned.ownerKey });
+    assert.equal(await owner.isOwner, true);
+    const deleted = nextEvent(owner.socket, "roomDeleted");
+    owner.socket.emit("CMD:deleteRoom");
+    await deleted;
+    const left = await sql.query(`SELECT count(*)::int AS count FROM room WHERE "roomId" = $1`, [owned.name]);
+    assert.equal(left.rows[0].count, 0);
+    await sleep(1200);
+    await assert.rejects(enter(owned.name), /Invalid namespace/);
+    console.log("PASS room owners survive a restart, and deleting a room removes it from PostgreSQL");
   } finally {
     await stopServer(server);
     await sql.query("DROP TABLE IF EXISTS room, subscriber, link_account, active_user, vbrowser");
     await sql.end();
   }
+}
+// With the login gate, the creator's Discord account owns the room in any browser
+const gate = {
+  DISCORD_AUTH_CLIENT_ID: "client-fixture",
+  DISCORD_AUTH_CLIENT_SECRET: "secret-fixture",
+  DISCORD_AUTH_GUILD_ID: "111",
+};
+Object.assign(process.env, gate);
+const { sessionToken } = await import("../server/utils/discordAuth.ts");
+for (const key of Object.keys(gate)) delete process.env[key];
+const cookieFor = (id) => "webshare_session=" + sessionToken({ id, name: id });
+server = await startServer(gate);
+try {
+  const { name } = await createOwnedRoom({ Cookie: cookieFor("42") });
+  const owner = await enter(name, { cookie: cookieFor("42") });
+  const other = await enter(name, { cookie: cookieFor("43") });
+  assert.deepEqual([await owner.isOwner, await other.isOwner], [true, false]);
+  await leave(owner);
+  await leave(other);
+  console.log("PASS with the login gate, the creator's Discord account owns the room without the owner key");
+} finally {
+  await stopServer(server);
 }
 console.log("All room checks passed.");
