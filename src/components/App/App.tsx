@@ -359,7 +359,14 @@ export class App extends React.Component<AppProps, AppState> {
         warningMessage: "",
       });
       // Use the name in our state, generate one if empty
-      this.updateName(this.state.myName || (await generateName()));
+      this.updateName(
+        this.state.myName ||
+          this.context.discordUser?.name ||
+          (await generateName()),
+      );
+      if (this.context.discordUser?.avatarUrl) {
+        this.updatePicture(this.context.discordUser.avatarUrl);
+      }
       this.loadSignInData(this.context.user);
       // Re-join video chat if we were in it before the reconnection
       if (window.webshare.ourStream) {
@@ -372,6 +379,11 @@ export class App extends React.Component<AppProps, AppState> {
         this.setState({ overlayMsg: "Couldn't load this room." });
       } else if (err.message === "password") {
         this.setState({ isErrorAuth: true });
+      } else if (err.message === "discord_auth") {
+        this.setState({
+          overlayMsg:
+            "Your Discord login has expired. Refresh the page to log in again.",
+        });
       } else {
         this.setState({ overlayMsg: err?.message ?? "An error occurred" });
       }

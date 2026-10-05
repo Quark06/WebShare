@@ -120,6 +120,29 @@ METING_API_PLATFORMS=netease,tencent
 
 离线功能性验证（Offline Functional Verification）可运行 `npm run test:resolvers`，使用本地模拟响应（Fixtures），不会请求公益服务或下载媒体。
 
+### Discord 登录拦截（Login Gate）
+
+默认关闭。启用后，访问者必须先用 Discord 登录，并且是指定 Discord 服务器（Server）的成员，才能打开页面、调用接口和进入房间。`/ping` 保持开放，用于健康检查（Health Check）。
+
+1. 在 [Discord 开发者门户（Developer Portal）](https://discord.com/developers/applications) 创建应用（Application）。应用的名称和图标会显示在 Discord 授权页上。
+2. 在 **OAuth2** 页面复制 Client ID 和 Client Secret，并在 **Redirects** 中添加 `https://<你的站点>/auth/discord/callback`。
+3. 在 Discord 设置中开启开发者模式（Developer Mode），右键服务器并选择 **复制服务器 ID**（Copy Server ID）。
+4. 将以下配置填入服务器 `.env`，然后重启服务器，无需重新构建前端：
+
+```dotenv
+DISCORD_AUTH_CLIENT_ID=
+DISCORD_AUTH_CLIENT_SECRET=
+DISCORD_AUTH_GUILD_ID=123456789012345678
+```
+
+授权页会申请两项权限：`identify`（用户名和头像）和 `guilds.members.read`（服务器中的成员信息）。WebShare 只查询配置的服务器，不读取用户加入的全部服务器列表。多个服务器 ID 用逗号分隔，用户是其中任意一个服务器的成员即可。用户本地没有保存昵称时，房间内的昵称和头像默认使用其在该服务器的昵称和头像，没有时使用 Discord 账号的名称和头像。
+
+成员身份在登录时检查。登录状态保存在 HttpOnly Cookie 中，从登录起有效 30 天（`DISCORD_AUTH_SESSION_DAYS`）。到期后，登录过的浏览器会自动重新经过 Discord：已授权过该应用的账号不会再看到授权页，同时会重新检查成员身份。用户退出或被移出服务器后，在当前登录到期前仍可访问。会话使用由 Client Secret 派生的密钥签名，重置 Secret 会让所有人重新登录。服务器不保存 Discord 令牌（Token）。
+
+回调地址（Callback URL）默认使用浏览器访问的站点地址，在 Nginx 之后会读取 `X-Forwarded-Proto`；需要不同地址时设置 `DISCORD_AUTH_REDIRECT_URI`。拦截功能要求页面和接口位于同一来源（Origin），与默认部署方式一致；若 `VITE_SERVER_HOST` 指向其他来源，登录 Cookie 不会随请求发送。使用 `npm run ui` 在独立端口开发时同样不会发送 Cookie，因此请通过 `npm run build` 和 `npm start`（或 `npm run preview`）在 `http://localhost:8080` 测试，并在应用的 Redirects 中添加 `http://localhost:8080/auth/discord/callback`。使用同一份 `.env` 的建房机器人（`node server/discordBot.ts`）会自行签发会话，其 `/watch` 命令不受影响。
+
+执行 `npm run test:discord-auth` 运行离线检查，脚本不会连接 Discord。
+
 ### Firebase 配置（用户身份验证）
 
 默认关闭登录。启用时使用自己的 Firebase 项目；应用不再默认连接上游账号或分析服务（Analytics）。
