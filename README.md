@@ -170,6 +170,14 @@ This project supports creating virtual browsers (using https://github.com/m1k1o/
 - Configure PostgreSQL with `DATABASE_URL` in `.env` and initialize a new database using [sql/schema.sql](sql/schema.sql).
 - This allows rooms to persist between server restarts
 
+Rooms outlive their visitors. When the last viewer leaves, or the server restarts, the room keeps its media, playlist, chat and playback position and stops playing. The next visitor finds it paused at that position and presses play to continue. Screen and file shares end when their room empties.
+
+**Join Room**, next to **New Room** on the home page and in the top bar, lists the rooms anyone can join. Each entry shows the room's title, current media, viewers and last activity, and a lock for password-protected rooms. Rooms with no visitors for 72 hours (`ROOM_ARCHIVE_HOURS`) are archived and leave the list. With PostgreSQL, an archived room's link still opens it with its progress intact, and the room returns to the list. Without PostgreSQL, rooms live in memory: a restart clears them, and archiving deletes them.
+
+The optional `server/cleanup.ts` maintenance script only removes rooms that never saved any state, so archived rooms stay restorable.
+
+Run `npm run test:rooms` to check persistence and the room list against a real server. It runs in memory by default. Setting `TEST_DATABASE_URL` to an empty, disposable PostgreSQL database adds the database checks; the script creates the schema there and drops it afterwards.
+
 ## Tech
 
 - React

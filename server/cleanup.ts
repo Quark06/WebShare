@@ -8,8 +8,9 @@ async function cleanupPostgres() {
     return;
   }
   console.time("[CLEANUP]");
+  // Archived rooms keep their data so their links can restore them; only drop rooms nobody ever used
   const result = await postgres?.query(
-    `DELETE FROM room WHERE owner IS NULL AND ("lastUpdateTime" < NOW() - INTERVAL '1 day' OR "lastUpdateTime" IS NULL)`,
+    `DELETE FROM room WHERE owner IS NULL AND data IS NULL AND ("lastUpdateTime" < NOW() - INTERVAL '1 day' OR "lastUpdateTime" IS NULL)`,
   );
   console.log(result.command, result.rowCount);
   console.timeEnd("[CLEANUP]");

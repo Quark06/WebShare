@@ -103,6 +103,19 @@ interface DiscordUser {
   avatarUrl?: string;
 }
 
+interface RoomListItem {
+  roomId: string;
+  vanity?: string;
+  title?: string;
+  description?: string;
+  titleColor?: string;
+  locked: boolean;
+  users: number;
+  lastActive: string;
+  video: string;
+  media?: PlaylistVideo;
+}
+
 interface ShardMetric {
   uptime: number;
   mem: number;

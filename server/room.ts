@@ -61,6 +61,7 @@ export class Room {
   public creator: string | undefined = undefined; // email of the user who created the room (just used for stats)
   public lock: string | undefined = undefined; // uid of the user who locked the room
   public playlist: PlaylistVideo[] = [];
+  public videoInfo: PlaylistVideo | undefined = undefined; // title and artwork of the current media, for the room list
 
   // Non-serialized state
   public roomId: string;
@@ -96,6 +97,8 @@ export class Room {
 
     if (roomData) {
       this.deserialize(roomData);
+      // Nobody is in a room while it loads, so it waits at the saved position
+      this.paused = true;
     }
 
     this.tsInterval = setInterval(async () => {
@@ -424,6 +427,7 @@ export class Room {
       creator: this.creator,
       playlist: this.playlist,
       loop: this.loop,
+      videoInfo: this.videoInfo,
     });
   };
 
@@ -463,6 +467,9 @@ export class Room {
     }
     if (roomObj.loop) {
       this.loop = roomObj.loop;
+    }
+    if (roomObj.videoInfo) {
+      this.videoInfo = roomObj.videoInfo;
     }
   };
 
@@ -571,13 +578,22 @@ export class Room {
     }
   };
 
-  private cmdHost = (socket: Socket | null, data: string) => {
+  private cmdHost = (
+    socket: Socket | null,
+    data: string,
+    info?: PlaylistVideo,
+  ) => {
     if (data && data.length > 50000) {
       return;
     }
     this.video = data;
     this.videoTS = 0;
-    this.paused = false;
+    // An empty room (e.g. a queue advancing unattended) waits for the next visitor to press play
+    this.paused = this.roster.length === 0;
+    this.videoInfo = info;
+    if (!info && data) {
+      this.loadVideoInfo(data);
+    }
     this.subtitle = "";
     this.loop = false;
     this.playbackRate = 1;
@@ -722,7 +738,7 @@ export class Room {
     const next = this.playlist.shift();
     this.io.of(this.roomId).emit("playlist", this.playlist);
     if (next) {
-      this.cmdHost(null, next.url);
+      this.cmdHost(null, next.url, next);
     }
   };
 
@@ -731,7 +747,6 @@ export class Room {
       return;
     }
     redisCount("playlistAdds");
-    const youtubeVideoId = getYoutubeVideoID(data);
     const item = {
       name: data,
       channel: "Video URL",
@@ -741,13 +756,7 @@ export class Room {
     };
     let video: PlaylistVideo | null = null;
     try {
-      if (youtubeVideoId) {
-        video = await fetchYoutubeVideo(youtubeVideoId);
-      } else if (isMusic(data)) {
-        video = await getMusicTrack(data);
-      } else {
-        video = getBilibiliSearchVideo(data);
-      }
+      video = await getMediaInfo(data);
     } catch (e) {
       // Failed to fetch media metadata but can still add the URL
       console.warn(e);
@@ -1453,10 +1462,38 @@ export class Room {
       this.io.of(this.roomId).emit("roster", this.getRosterForApp());
       delete this.tsMap[clientId];
       delete this.socketIdMap[clientId];
+      if (!this.roster.length) {
+        this.stopWhenEmpty();
+      }
     }
     // Keep namemap/picturemap so old chat messages still render correctly after disconnect
     // When serializing we only write values with messages in chat
     // This will keep growing in memory until the room is unloaded
+  };
+
+  // Keep the position but stop playback so the next visitor continues from here
+  private stopWhenEmpty = () => {
+    if (this.getSharerId()) {
+      // Screen and file shares end with their sharer
+      this.video = "";
+      this.videoInfo = undefined;
+      this.videoTS = 0;
+    }
+    this.paused = true;
+    this.lastUpdateTime = new Date();
+    this.saveRoom();
+  };
+
+  private loadVideoInfo = async (url: string) => {
+    try {
+      const info = await getMediaInfo(url);
+      // The media may have changed while the lookup was running
+      if (info && this.video === url) {
+        this.videoInfo = info;
+      }
+    } catch (e) {
+      console.warn(e);
+    }
   };
 
   private kickUser = async (raw: unknown) => {
@@ -1494,6 +1531,18 @@ export class Room {
     this.io.of(this.roomId).emit("chatinit", this.chat);
     return;
   };
+}
+
+// Metadata for a media URL; Bilibili, and YouTube without an API key, only know recently searched videos
+async function getMediaInfo(url: string): Promise<PlaylistVideo | null> {
+  const youtubeVideoId = getYoutubeVideoID(url);
+  if (youtubeVideoId) {
+    return fetchYoutubeVideo(youtubeVideoId);
+  }
+  if (isMusic(url)) {
+    return getMusicTrack(url);
+  }
+  return getBilibiliSearchVideo(url);
 }
 
 function isValidUUID(id: string) {

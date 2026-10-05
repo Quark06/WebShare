@@ -60,6 +60,7 @@ const defaults = {
   CONVERT_PATH: "", // Path of server that supports video conversion
   ROOM_CAPACITY: 0, // Maximum capacity of a standard room. Set to 0 for unlimited.
   ROOM_CAPACITY_SUB: 0, // Maximum capacity of a sub room. Set to 0 for unlimited.
+  ROOM_ARCHIVE_HOURS: 72, // Hours without visitors before a room leaves the room list; with PostgreSQL its link still restores it
   BUILD_DIRECTORY: "build", // Name of the directory where the built React UI is served from
   VM_MIN_UPTIME_MINUTES: 0, // Number of minutes of the hour VMs must exist for before being eligible for termination
   SHARD: undefined, // Optional, shard ID; omit for a single server
