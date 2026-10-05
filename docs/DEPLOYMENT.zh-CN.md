@@ -264,7 +264,7 @@ npm exec -- pm2 status
 
 若要启用虚拟浏览器、分片或后台任务，请使用自己的基础设施配置；基础共同观看部署使用上面的单进程入口。Discord 账号关联需要构建时设置 `VITE_DISCORD_CLIENT_ID`，Docker 部署可使用同名 `--build-arg`。订阅（Subscription）需要自己的 `STRIPE_SECRET_KEY` 和 `STRIPE_PRICE_ID`，默认关闭。
 
-若启用 PostgreSQL，通过 `DATABASE_URL` 连接自己的数据库，并使用 [sql/schema.sql](../sql/schema.sql) 初始化新数据库结构（Database Schema）。
+若启用 PostgreSQL，通过 `DATABASE_URL` 连接自己的数据库，并使用 [sql/schema.sql](../sql/schema.sql) 初始化新数据库结构（Database Schema）。启用后，房间在服务器重启后仍会保留，并暂停在保存的进度。连续 72 小时（`ROOM_ARCHIVE_HOURS`）无人进入的房间会从房间列表中归档，用原链接打开即可恢复。详见 [房间持久化](../README.zh-CN.md#房间持久化)。
 
 屏幕与文件共享、视频聊天默认只使用公共 STUN 服务。跨网络需要中继（TURN Relay）时，配置自己的 `VITE_ICE_SERVERS` JSON 数组并重建前端；Docker 可传入同名 `--build-arg`。中继会承担对应的共享媒体流量，B 站和音乐的直接播放不受此项影响。
 
@@ -278,6 +278,7 @@ npm exec -- pm2 status
 4. B 站直播显示 LIVE，未开播直播间显示明确提示；普通视频可跳转进度（Seek）。
 5. 查看浏览器网络请求（Network Requests），确认 B 站及音乐媒体来自平台 CDN，并检查服务器日志是否有解析错误。
 6. 如启用 Discord 登录拦截：未登录的浏览器访问房间地址时显示登录页；服务器成员授权后回到原房间，非成员看到拦截提示；`/ping` 仍可直接访问。
+7. 所有人离开房间后再进入，房间应暂停在离开时的进度；**Join Room** 列表中可以看到并进入该房间。如启用 PostgreSQL，重启服务后房间仍在列表中，进度也保留。
 
 部署脚本和本机运行验证不等于公网部署验收。Linux 上的 Nginx、HTTPS 证书、Docker 镜像实际构建，以及不同网络观看者的可用性，应以目标服务器上的测试结果为准。
 

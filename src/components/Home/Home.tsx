@@ -5,7 +5,7 @@ import {
   IconScreenShare, IconFile, IconLink, IconRefresh,
   IconMessageFilled, IconList, IconVideo, type IconProps,
 } from "@tabler/icons-react";
-import { NewRoomButton } from "../TopBar/TopBar";
+import { JoinRoomButton, NewRoomButton } from "../TopBar/TopBar";
 import styles from "./Home.module.css";
 
 export const Home = () => (
@@ -16,7 +16,10 @@ export const Home = () => (
           <h1 className={styles.heroText}>Watch and listen together with WebShare.</h1>
           <div className={styles.subText}>Share Bilibili videos and live streams, music, and YouTube with friends.</div>
           <div className={styles.subText}>Create a room, share its link, and pick something to play.</div>
-          <div style={{ marginTop: "24px" }}><NewRoomButton size="xl" /></div>
+          <div style={{ marginTop: "24px", display: "flex", flexWrap: "wrap", gap: "12px" }}>
+            <NewRoomButton size="xl" />
+            <JoinRoomButton size="xl" />
+          </div>
         </div>
         <img src="/logo.svg" alt="WebShare" width={180} height={180} style={{ margin: "30px" }} />
       </div>

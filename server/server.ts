@@ -695,6 +695,59 @@ app.get("/listRooms", async (req, res) => {
   res.json(result?.rows ?? []);
 });
 
+function roomArchiveHours() {
+  return Number(config.ROOM_ARCHIVE_HOURS) || 72;
+}
+
+// Rooms anyone can join: saved rooms with a visitor in the archive window, merged with live rooms in memory
+// (with sharding, live details only cover rooms on this shard)
+app.get("/rooms", async (_req, res) => {
+  const archiveHours = roomArchiveHours();
+  const since = new Date(Date.now() - archiveHours * 60 * 60 * 1000);
+  const list = new Map<string, RoomListItem>();
+  const saved = await postgres?.query(
+    `SELECT "roomId", vanity, password IS NOT NULL AS locked, "roomTitle", "roomDescription", "roomTitleColor", "lastUpdateTime", data->>'video' AS video, data->'videoInfo' AS "videoInfo"
+    FROM room WHERE data IS NOT NULL AND "lastUpdateTime" > $1
+    ORDER BY "lastUpdateTime" DESC LIMIT 100`,
+    [since],
+  );
+  for (const row of saved?.rows ?? []) {
+    list.set(row.roomId, {
+      roomId: row.roomId,
+      vanity: row.vanity ?? undefined,
+      title: row.roomTitle ?? undefined,
+      description: row.roomDescription ?? undefined,
+      titleColor: row.roomTitleColor ?? undefined,
+      locked: row.locked,
+      users: 0,
+      lastActive: new Date(row.lastUpdateTime).toISOString(),
+      video: row.video ?? "",
+      media: row.videoInfo ?? undefined,
+    });
+  }
+  for (const [roomId, room] of rooms) {
+    if (!room.roster.length && room.lastUpdateTime < since) {
+      continue;
+    }
+    list.set(roomId, {
+      roomId,
+      locked: false,
+      ...list.get(roomId),
+      users: room.roster.length,
+      lastActive: (
+        room.roster.length ? new Date() : room.lastUpdateTime
+      ).toISOString(),
+      video: room.video ?? "",
+      media: room.videoInfo,
+    });
+  }
+  const sorted = Array.from(list.values()).sort(
+    (a, b) =>
+      b.users - a.users || Date.parse(b.lastActive) - Date.parse(a.lastActive),
+  );
+  res.json({ archiveHours, rooms: sorted.slice(0, 100) });
+});
+
 app.delete("/deleteRoom", async (req, res) => {
   const decoded = await validateUserToken(
     String(req.query?.uid),
@@ -874,6 +927,8 @@ async function saveRooms() {
   // Unload rooms that are empty and idle
   // Frees up some JS memory space when process is long-running
   // On reconnect, we'll attempt to reload the room
+  // Without PostgreSQL unloading deletes the room, so keep it until it's archived
+  const unloadAfterHours = postgres ? 8 : roomArchiveHours();
   let saveCount = 0;
   let skipCount = 0;
   const start = Date.now();
@@ -882,7 +937,8 @@ async function saveRooms() {
       if (
         room.roster.length === 0 &&
         !room.vBrowser &&
-        Number(room.lastUpdateTime) < Date.now() - 8 * 60 * 60 * 1000
+        Number(room.lastUpdateTime) <
+          Date.now() - unloadAfterHours * 60 * 60 * 1000
       ) {
         console.log(
           "freeing room %s from memory on shard %s",
