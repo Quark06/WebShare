@@ -65,6 +65,7 @@ import {
   IconMusic,
   IconScreenShare,
   IconSettings,
+  IconTrash,
   IconUser,
   IconUserScreen,
   IconUsersGroup,
@@ -1972,6 +1973,10 @@ export class App extends React.Component<AppProps, AppState> {
     this.socket.emit("CMD:playlistDelete", index);
   };
 
+  roomPlaylistClear = () => {
+    this.socket.emit("CMD:playlistClear");
+  };
+
   updateName = (name: string) => {
     this.setState({ myName: name });
     this.socket.emit("CMD:name", name);
@@ -2481,6 +2486,15 @@ export class App extends React.Component<AppProps, AppState> {
                             maxWidth: isMobile() ? 400 : 600,
                           }}
                         >
+                          <Menu.Item
+                            color="red"
+                            leftSection={<IconTrash size={16} />}
+                            disabled={!this.haveLock() || playlist.length === 0}
+                            onClick={this.roomPlaylistClear}
+                          >
+                            一键清空
+                          </Menu.Item>
+                          <Menu.Divider />
                           {playlist.length === 0 && (
                             <Menu.Item disabled>
                               There are no items in the playlist.
