@@ -23,12 +23,6 @@ import {
 } from "./utils/music.ts";
 import { Room, hashOwnerKey } from "./room.ts";
 import { redis, redisCount } from "./utils/redis.ts";
-import {
-  getCustomerByEmail,
-  createSelfServicePortal,
-  getIsSubscriberByEmail,
-  stripe,
-} from "./utils/stripe.ts";
 import { deleteUser, validateUserToken } from "./utils/firebase.ts";
 import path from "node:path";
 import { getStartOfDay } from "./utils/time.ts";
@@ -122,7 +116,6 @@ setInterval(saveRooms, 1000);
 if (process.env.NODE_ENV === "development") {
   try {
     import("./vmWorker.ts");
-    // import('./syncSubs.ts');
     // import('./timeSeries.ts');
   } catch (e) {
     console.error(e);
@@ -550,53 +543,6 @@ app.post("/createRoom", async (req, res) => {
   res.json({ name, ownerKey });
 });
 
-app.post("/checkoutSub", async (req, res) => {
-  if (!config.STRIPE_SECRET_KEY || !config.STRIPE_PRICE_ID) {
-    res.status(503).json({ error: "Subscriptions are not configured" });
-    return;
-  }
-  const session = await stripe.checkout.sessions.create({
-    mode: "subscription",
-    client_reference_id: req.body.uid,
-    customer_email: req.body.email ?? undefined,
-    line_items: [
-      {
-        price: config.STRIPE_PRICE_ID,
-        quantity: 1,
-      },
-    ],
-    // Redirect back to the user's room, passed in the body
-    success_url: req.body.return_url,
-    cancel_url: req.body.return_url,
-  });
-  res.json({ url: session.url });
-});
-
-app.post("/manageSub", async (req, res) => {
-  const decoded = await validateUserToken(
-    String(req.body?.uid),
-    String(req.body?.token),
-  );
-  if (!decoded) {
-    res.status(400).json({ error: "invalid user token" });
-    return;
-  }
-  if (!decoded.email) {
-    res.status(400).json({ error: "no email found" });
-    return;
-  }
-  const customer = await getCustomerByEmail(decoded.email);
-  if (!customer) {
-    res.status(400).json({ error: "customer not found" });
-    return;
-  }
-  const session = await createSelfServicePortal(
-    customer.id,
-    req.body?.return_url,
-  );
-  res.json(session);
-});
-
 app.delete("/deleteAccount", async (req, res) => {
   // TODO pass this in req.query instead
   const decoded = await validateUserToken(req.body?.uid, req.body?.token);
@@ -607,10 +553,6 @@ app.delete("/deleteAccount", async (req, res) => {
   if (postgres) {
     // Delete rooms
     await postgres.query("DELETE FROM room WHERE owner = $1", [decoded.uid]);
-    // Delete linked accounts
-    await postgres.query("DELETE FROM link_account WHERE uid = $1", [
-      decoded.uid,
-    ]);
   }
   await deleteUser(decoded.uid);
   redisCount("deleteAccount");
@@ -622,24 +564,10 @@ app.get("/metadata", async (req, res) => {
     String(req.query?.uid),
     String(req.query?.token),
   );
-  let isSubscriber = await getIsSubscriberByEmail(decoded?.email);
-  // Has the user ever been a subscriber?
-  // const customer = await getCustomerByEmail(decoded.email);
-  let isFreePoolFull = false;
-  try {
-    isFreePoolFull = (
-      await axios.get(
-        "http://localhost:" + config.VMWORKER_PORT + "/isFreePoolFull",
-      )
-    ).data.isFull;
-  } catch (e: any) {
-    console.warn("[WARNING]: free pool check failed: %s", e.code);
-  }
   const beta =
     decoded?.email != null &&
     Boolean(config.BETA_USER_EMAILS.split(",").includes(decoded?.email));
   const streamPath = beta ? config.STREAM_PATH : undefined;
-  const convertPath = isSubscriber ? config.CONVERT_PATH : undefined;
   // log metrics but don't wait for it
   if (postgres && decoded?.uid) {
     upsertObject(
@@ -650,12 +578,8 @@ app.get("/metadata", async (req, res) => {
     );
   }
   res.json({
-    subscriptionsEnabled: Boolean(config.STRIPE_SECRET_KEY && config.STRIPE_PRICE_ID),
-    isSubscriber,
-    isFreePoolFull,
     beta,
     streamPath,
-    convertPath,
   });
 });
 
@@ -772,97 +696,6 @@ app.delete("/deleteRoom", async (req, res) => {
     [decoded.uid, req.query.roomId],
   );
   res.json(result?.rows);
-});
-
-app.get("/linkAccount", async (req, res) => {
-  const decoded = await validateUserToken(
-    String(req.query?.uid),
-    String(req.query?.token),
-  );
-  if (!decoded) {
-    res.status(400).json({ error: "invalid user token" });
-    return;
-  }
-  if (!postgres) {
-    res.status(400).json({ error: "invalid database client" });
-    return;
-  }
-  // Get the linked accounts for the user
-  let linkAccounts: LinkAccount[] = [];
-  if (decoded?.uid && postgres) {
-    const { rows } = await postgres.query(
-      "SELECT kind, accountid, accountname, discriminator FROM link_account WHERE uid = $1",
-      [decoded?.uid],
-    );
-    linkAccounts = rows;
-  }
-  res.json(linkAccounts);
-});
-
-app.post("/linkAccount", async (req, res) => {
-  const decoded = await validateUserToken(
-    String(req.body?.uid),
-    String(req.body?.token),
-  );
-  if (!decoded) {
-    res.status(400).json({ error: "invalid user token" });
-    return;
-  }
-  if (!postgres) {
-    res.status(400).json({ error: "invalid database client" });
-    return;
-  }
-  const kind = req.body?.kind;
-  if (kind === "discord") {
-    const tokenType = req.body?.tokenType;
-    const accessToken = req.body.accessToken;
-    // Get the token and verify the user
-    const response = await axios.get("https://discord.com/api/users/@me", {
-      headers: {
-        authorization: `${tokenType} ${accessToken}`,
-      },
-    });
-    const accountid = response.data.id;
-    const accountname = response.data.username;
-    const discriminator = response.data.discriminator;
-    // Store the user id, username, discriminator
-    await upsertObject(
-      postgres,
-      "link_account",
-      {
-        accountid: accountid,
-        accountname: accountname,
-        discriminator: discriminator,
-        uid: decoded.uid,
-        kind: kind,
-      },
-      { uid: true, kind: true },
-    );
-    res.json({});
-  } else {
-    res.status(400).json({ error: "unsupported kind" });
-  }
-});
-
-app.delete("/linkAccount", async (req, res) => {
-  // TODO read from req.query instead
-  const decoded = await validateUserToken(
-    String(req.body?.uid),
-    String(req.body?.token),
-  );
-  if (!decoded) {
-    res.status(400).json({ error: "invalid user token" });
-    return;
-  }
-  if (!postgres) {
-    res.status(400).json({ error: "invalid database client" });
-    return;
-  }
-  await postgres.query(
-    "DELETE FROM link_account WHERE uid = $1 AND kind = $2",
-    [decoded.uid, req.body.kind],
-  );
-  res.json({});
 });
 
 app.get("/generateName", async (req, res) => {

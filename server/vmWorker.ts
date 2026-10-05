@@ -79,17 +79,17 @@ app.get("/stats", async (req, res) => {
   res.json(vmManagerStats);
 });
 
-app.get("/isFreePoolFull", async (req, res) => {
-  const freePools = Object.values(vmManagers).filter((mgr) => {
+app.get("/isStandardPoolFull", async (req, res) => {
+  const standardPools = Object.values(vmManagers).filter((mgr) => {
     return mgr?.getIsLarge() === false && mgr?.getLimitSize() > 0;
   });
   const fullResult = await Promise.all<Boolean>(
-    freePools.map(async (freePool) => {
+    standardPools.map(async (pool) => {
       let isFull = false;
-      if (freePool) {
-        const availableCount = await freePool.getAvailableCount();
-        const limitSize = freePool?.getLimitSize() ?? 0;
-        const currentSize = await freePool.getCurrentSize();
+      if (pool) {
+        const availableCount = await pool.getAvailableCount();
+        const limitSize = pool?.getLimitSize() ?? 0;
+        const currentSize = await pool.getCurrentSize();
         isFull = Boolean(
           limitSize > 0 &&
           (Number(availableCount) === 0 ||
@@ -99,7 +99,7 @@ app.get("/isFreePoolFull", async (req, res) => {
       return isFull;
     }),
   );
-  const isFull = freePools.length && fullResult.every(Boolean);
+  const isFull = standardPools.length && fullResult.every(Boolean);
   res.json({ isFull });
 });
 

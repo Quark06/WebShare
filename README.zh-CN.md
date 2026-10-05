@@ -9,8 +9,7 @@ WebShare 是可自行部署的同步观影、B 站直播、音乐与聊天网站
 - 同步当前房间内正在观看的视频。
 - 所有观看者的播放、暂停和跳转进度（Seek）操作保持同步（Synchronization）。
 - 支持以下媒体来源和共享方式：
-  - 屏幕共享（Screen Sharing）：整个屏幕、浏览器标签页或应用窗口。
-  - 通过单独配置的服务启动共享虚拟浏览器（Virtual Browser）。
+  - 屏幕共享（Screen Sharing）和共享虚拟浏览器（Virtual Browser）正在重做，目前点击按钮只会显示“建设中”提示。
   - 共享并播放自己的本地文件（Stream Your Own File）。
   - 互联网上可通过 HTTP 访问的视频文件。
   - YouTube 视频。
@@ -148,7 +147,9 @@ DISCORD_AUTH_GUILD_ID=123456789012345678
 
 默认关闭登录。启用时使用自己的 Firebase 项目；应用不再默认连接上游账号或分析服务（Analytics）。
 
-项目使用 Firebase 进行身份验证（Authentication），用于用户登录、账号管理、订阅，以及房间锁定和永久房间等功能。
+项目使用 Firebase 进行身份验证（Authentication），用于用户登录、账号管理，以及房间锁定和永久房间等功能。
+
+所有登录用户享有相同的功能，没有订阅或付费等级。每位登录用户最多可以把 `PERMANENT_ROOM_LIMIT` 个房间设为永久房间（默认 20，设为 0 表示不限），永久房间的所有者可以设置房间密码、自定义链接、标题、简介和标题颜色。配置 PostgreSQL 时，`ROOM_CAPACITY` 限制单个房间的人数（默认 0，表示不限）。
 
 首先在 [Firebase 控制台](https://console.firebase.google.com/) 创建新的应用，或复用已有应用。创建后，点击左侧菜单中「Project overview」旁的齿轮图标，进入项目设置（Project Settings）。向下滚动，创建 Web 应用，并复制 Firebase SDK 配置片段中的 JSON 数据。
 
@@ -157,6 +158,8 @@ DISCORD_AUTH_GUILD_ID=123456789012345678
 服务器端验证账号还需要 `FIREBASE_ADMIN_SDK_CONFIG`，按相同方式处理其配置。
 
 ### 虚拟浏览器配置
+
+房间里的**虚拟浏览器**按钮目前只显示“建设中”提示。服务端支持和下面的配置说明会保留，供之后恢复这个功能时使用。
 
 项目支持通过云服务商或 Docker 容器（Container）创建虚拟浏览器，使用 [Neko](https://github.com/m1k1o/neko)。开发时使用 Docker 最方便。
 
@@ -198,11 +201,11 @@ DISCORD_AUTH_GUILD_ID=123456789012345678
 
 ## 可选集成（Optional Integrations）
 
-Discord 账号关联需要配置自己的 `VITE_DISCORD_CLIENT_ID`；授权回调（OAuth Redirect）默认使用当前站点地址。运行自己的建房机器人时，设置 `DISCORD_BOT_TOKEN` 和 `DISCORD_SITE_URL`，可选设置 `DISCORD_API_URL`，然后执行 `node server/discordBot.ts`。
+运行自己的建房机器人时，设置 `DISCORD_BOT_TOKEN` 和 `DISCORD_SITE_URL`，可选设置 `DISCORD_API_URL`，然后执行 `node server/discordBot.ts`。
 
-只有同时配置 `STRIPE_SECRET_KEY` 和自己的 `STRIPE_PRICE_ID` 才启用订阅（Subscription）。价格以自己的 Stripe 结账页面为准。后台任务（Workers）与虚拟浏览器基础设施需要单独配置。
+后台任务（Workers）与虚拟浏览器基础设施需要单独配置。
 
-屏幕与文件共享、视频聊天默认使用公共 STUN 服务。需要中继（TURN Relay）的网络应在 `VITE_ICE_SERVERS` 中填写自己的 ICE 服务器 JSON 数组并重新构建；配置会提供给客户端，Docker 构建可传入同名 `--build-arg`。
+文件共享和视频聊天默认使用公共 STUN 服务。需要中继（TURN Relay）的网络应在 `VITE_ICE_SERVERS` 中填写自己的 ICE 服务器 JSON 数组并重新构建；配置会提供给客户端，Docker 构建可传入同名 `--build-arg`。
 
 浏览器设置、昵称、标识符（Identifier）和房间密码使用独立的 `webshare-*` 存储键（Storage Key）。
 

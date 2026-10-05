@@ -65,7 +65,7 @@ VITE_FIREBASE_CONFIG=
 
 YouTube 搜索代理运行在服务器所在的网络环境中；服务器的 `127.0.0.1` 指服务器自身。Windows 本机系统代理不会自动成为 Linux 服务器的代理。
 
-如启用 Firebase，需配置自己的 `VITE_FIREBASE_CONFIG`、服务端 `FIREBASE_ADMIN_SDK_CONFIG` 及授权域名（Authorized Domains）。使用涉及跳转的登录或账号关联功能时，也应将 `VITE_OAUTH_REDIRECT_HOSTNAME` 设置为自己的站点来源地址。
+如启用 Firebase，需配置自己的 `VITE_FIREBASE_CONFIG`、服务端 `FIREBASE_ADMIN_SDK_CONFIG` 及授权域名（Authorized Domains）。
 
 可选的第三方解析（Third-party Resolvers）配置如下；不设置时仍使用原有链路（Local Pipeline）。修改后重启服务即可：
 
@@ -205,7 +205,6 @@ Dockerfile 会安装完整依赖并构建前端，运行时通过 `NODE_ENV=prod
 docker build -t webshare:local \
   --build-arg VITE_FIREBASE_CONFIG='{"apiKey":"YOUR_PUBLIC_KEY","authDomain":"YOUR_PROJECT.firebaseapp.com","projectId":"YOUR_PROJECT"}' \
   --build-arg VITE_SERVER_HOST= \
-  --build-arg VITE_OAUTH_REDIRECT_HOSTNAME=https://watch.example.com \
   .
 ```
 
@@ -262,11 +261,11 @@ npm exec -- pm2 status
 | GitHub Actions | 持续集成（Continuous Integration，CI）只检查构建，不自动部署服务器。 |
 | 本机预览 | `scripts/preview.mjs` 用于 Windows 本地预览；Linux 常驻运行使用 PM2 或 Docker。 |
 
-若要启用虚拟浏览器、分片或后台任务，请使用自己的基础设施配置；基础共同观看部署使用上面的单进程入口。Discord 账号关联需要构建时设置 `VITE_DISCORD_CLIENT_ID`，Docker 部署可使用同名 `--build-arg`。订阅（Subscription）需要自己的 `STRIPE_SECRET_KEY` 和 `STRIPE_PRICE_ID`，默认关闭。
+若要启用分片或后台任务，请使用自己的基础设施配置；基础共同观看部署使用上面的单进程入口。屏幕共享和虚拟浏览器正在重做，目前房间里的这两个按钮只显示“建设中”提示。WebShare 不含订阅或付费功能，所有用户使用相同的功能；永久房间数量上限由 `PERMANENT_ROOM_LIMIT` 控制（默认 20，设为 0 表示不限）。
 
 若启用 PostgreSQL，通过 `DATABASE_URL` 连接自己的数据库，并使用 [sql/schema.sql](../sql/schema.sql) 初始化新数据库结构（Database Schema）。启用后，房间在服务器重启后仍会保留，并暂停在保存的进度。连续 72 小时（`ROOM_ARCHIVE_HOURS`）无人进入的房间会从房间列表中归档，用原链接打开即可恢复。详见 [房间持久化](../README.zh-CN.md#房间持久化)。
 
-屏幕与文件共享、视频聊天默认只使用公共 STUN 服务。跨网络需要中继（TURN Relay）时，配置自己的 `VITE_ICE_SERVERS` JSON 数组并重建前端；Docker 可传入同名 `--build-arg`。中继会承担对应的共享媒体流量，B 站和音乐的直接播放不受此项影响。
+文件共享和视频聊天默认只使用公共 STUN 服务。跨网络需要中继（TURN Relay）时，配置自己的 `VITE_ICE_SERVERS` JSON 数组并重建前端；Docker 可传入同名 `--build-arg`。中继会承担对应的共享媒体流量，B 站和音乐的直接播放不受此项影响。
 
 ## 7. 部署后的功能验收
 

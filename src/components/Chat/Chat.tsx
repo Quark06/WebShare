@@ -222,21 +222,9 @@ export class Chat extends React.Component<ChatProps> {
     } else if (cmd === "unlock") {
       return t("unlocked the room");
     } else if (cmd === "vBrowserTimeout") {
-      return (
-        <React.Fragment>
-          {t("The VBrowser shut down automatically.")}
-          <br />
-          {t("Subscribe for longer sessions.")}
-        </React.Fragment>
-      );
+      return t("The VBrowser shut down automatically.");
     } else if (cmd === "vBrowserAlmostTimeout") {
-      return (
-        <React.Fragment>
-          {t("The VBrowser will shut down soon.")}
-          <br />
-          {t("Subscribe for longer sessions.")}
-        </React.Fragment>
-      );
+      return t("The VBrowser will shut down soon.");
     }
     return cmd;
   };
@@ -459,8 +447,7 @@ const ChatMessage = ({
   className: string;
 }) => {
   const { user } = useContext(MetadataContext);
-  const { id, timestamp, cmd, msg, system, isSub, reactions, videoTS } =
-    message;
+  const { id, timestamp, cmd, msg, system, reactions, videoTS } = message;
   const spellFull = 5; // the number of people whose names should be written out in full in the reaction popup
   const imageMsg = renderImageString(msg);
   return (
@@ -503,8 +490,7 @@ const ChatMessage = ({
             trigger={
               <div
                 style={{ cursor: "pointer", fontWeight: 700 }}
-                title={isSub ? t("WebShare Plus subscriber") : ""}
-                className={`${isSub ? styles.subscriber : styles.light} ${styles.hoverEffect}`}
+                className={`${styles.light} ${styles.hoverEffect}`}
               >
                 {Boolean(system) && t("System")}
                 {nameMap[id] || id}

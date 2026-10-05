@@ -11,9 +11,9 @@ async function statsTimeSeries() {
     console.time("timeSeries");
     try {
       const stats = await getStats();
-      const isFreePoolFull = (
+      const isStandardPoolFull = (
         await axios.get(
-          "http://localhost:" + config.VMWORKER_PORT + "/isFreePoolFull",
+          "http://localhost:" + config.VMWORKER_PORT + "/isStandardPoolFull",
         )
       ).data.isFull;
       const datapoint: AnyDict = {
@@ -35,7 +35,7 @@ async function statsTimeSeries() {
         vBrowserLaunches: stats.counts.vBrowserLaunches,
         vBrowserFails: stats.counts.vBrowserFails,
         vBrowserStagingFails: stats.counts.vBrowserStagingFails,
-        isFreePoolFull: Number(isFreePoolFull),
+        isStandardPoolFull: Number(isStandardPoolFull),
       };
       Object.keys(stats.vmManagerStats).forEach((key) => {
         if (stats.vmManagerStats[key]) {

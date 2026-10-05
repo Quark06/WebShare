@@ -10,7 +10,6 @@ import firebase from "firebase/compat/app";
 import "firebase/compat/auth";
 import { LoginModal } from "../Modal/LoginModal";
 import { RoomListModal } from "../Modal/RoomListModal";
-import { SubscribeButton } from "../SubscribeButton/SubscribeButton";
 import { ProfileModal } from "../Modal/ProfileModal";
 import { InviteButton } from "../InviteButton/InviteButton";
 import { LanguageSwitch } from "../LanguageSwitch/LanguageSwitch";
@@ -264,7 +263,6 @@ export const TopBar = (props: {
   roomTitleColor?: string;
 }) => {
   const context = useContext(MetadataContext);
-  const subscribeButton = <SubscribeButton />;
   return (
     <React.Fragment>
       <div
@@ -372,7 +370,6 @@ export const TopBar = (props: {
           {!props.hideNewRoom && <NewRoomButton openNewTab />}
           {!props.hideNewRoom && <JoinRoomButton openNewTab />}
           {!props.hideMyRooms && context.user && <ListRoomsButton />}
-          {subscribeButton}
           {!props.hideSignin && <SignInButton />}
         </div>
       </div>

@@ -7,7 +7,6 @@ CREATE TABLE room(
   owner text,
   vanity text,
   "isChatDisabled" boolean,
-  "isSubRoom" boolean,
   data jsonb,
   "lastUpdateTime" timestamp with time zone,
   "roomTitle" text,
@@ -20,23 +19,6 @@ CREATE UNIQUE INDEX on room(LOWER(vanity)) WHERE vanity IS NOT NULL;
 CREATE INDEX on room(owner) WHERE owner IS NOT NULL;
 CREATE INDEX on room("creationTime");
 CREATE INDEX on room USING GIN("roomId" gin_trgm_ops);
-
-CREATE TABLE subscriber(
-  "customerId" text,
-  email text,
-  status text,
-  uid text,
-  PRIMARY KEY(uid)
-);
-
-CREATE TABLE link_account(
-  uid text,
-  kind text,
-  accountid text,
-  accountname text,
-  discriminator text,
-  PRIMARY KEY(uid, kind)
-);
 
 CREATE TABLE active_user(
   uid text,

@@ -1,4 +1,3 @@
-import type MediasoupClient from "mediasoup-client";
 import React from "react";
 import { Alert, Loader, Menu, Overlay, Select, Title } from "@mantine/core";
 import io, { Socket } from "socket.io-client";
@@ -23,7 +22,6 @@ import {
   isVBrowser,
   isDash,
   VIDEO_MAX_HEIGHT_CSS,
-  createUuid,
   softWhite,
   getSavedPasswords,
   getOwnerKey,
@@ -39,12 +37,10 @@ import { MultiStreamModal } from "../Modal/MultiStreamModal";
 import { ComboBox } from "../ComboBox/ComboBox";
 import { SearchComponent } from "../SearchComponent/SearchComponent";
 import { Controls } from "../Controls/Controls";
-import { VBrowserModal } from "../Modal/VBrowserModal";
 import { SettingsModal } from "../Settings/SettingsModal";
 import { ErrorModal } from "../Modal/ErrorModal";
 import { DeleteRoomModal } from "../Modal/DeleteRoomModal";
 import { PasswordModal } from "../Modal/PasswordModal";
-import { ScreenShareModal } from "../Modal/ScreenShareModal";
 import { FileShareModal } from "../Modal/FileShareModal";
 import firebase from "firebase/compat/app";
 import { SubtitleModal } from "../Modal/SubtitleModal";
@@ -156,9 +152,6 @@ interface AppState {
   isVBrowserLarge: boolean;
   nonPlayableMedia: boolean;
   currentTab: string;
-  isSubscribeModalOpen: boolean;
-  isVBrowserModalOpen: boolean;
-  isScreenShareModalOpen: boolean;
   isFileShareModalOpen: boolean;
   isSubtitleModalOpen: boolean;
   isMultiSelectModalOpen: boolean;
@@ -168,6 +161,7 @@ interface AppState {
   roomId: string;
   errorMessage: string;
   successMessage: string;
+  infoMessage: string;
   warningMessage: string;
   isChatDisabled: boolean;
   showChatColumn: boolean;
@@ -183,7 +177,6 @@ interface AppState {
   roomPlaybackRate: number;
   isLiveStream: boolean;
   settingsModalOpen: boolean;
-  uploadController: AbortController | undefined;
 }
 
 export class App extends React.Component<AppProps, AppState> {
@@ -229,9 +222,6 @@ export class App extends React.Component<AppProps, AppState> {
     nonPlayableMedia: false,
     currentTab:
       new URLSearchParams(window.location.search).get("tab") ?? "chat",
-    isSubscribeModalOpen: false,
-    isVBrowserModalOpen: false,
-    isScreenShareModalOpen: false,
     isFileShareModalOpen: false,
     isSubtitleModalOpen: false,
     isMultiSelectModalOpen: false,
@@ -241,6 +231,7 @@ export class App extends React.Component<AppProps, AppState> {
     savedPasswords: {},
     errorMessage: "",
     successMessage: "",
+    infoMessage: "",
     warningMessage: "",
     isChatDisabled: false,
     showChatColumn: isMobile()
@@ -262,11 +253,8 @@ export class App extends React.Component<AppProps, AppState> {
     roomPlaybackRate: 0,
     isLiveStream: false,
     settingsModalOpen: false,
-    uploadController: undefined,
   };
   socket: Socket = null!;
-  mediasoupPubSocket: Socket | null = null;
-  mediasoupSubSocket: Socket | null = null;
   ytDebounce = true;
   localStreamToPublish?: MediaStream;
   isLocalStreamAFile = false;
@@ -761,10 +749,6 @@ export class App extends React.Component<AppProps, AppState> {
               } else {
                 this.localSeek(ts);
               }
-              if (this.state.uploadController) {
-                // Jump back to the start of the video
-                this.roomSeek(0);
-              }
               if (data.playbackRate) {
                 // Set playback rate again since it might have been lost
                 console.log("setting playback rate again", data.playbackRate);
@@ -1162,79 +1146,7 @@ export class App extends React.Component<AppProps, AppState> {
     this.socket.emit("CMD:deleteChatMessages", {});
   };
 
-  startConvert = async (sourceUrl?: string) => {
-    let stream = new ReadableStream();
-    let file: File;
-    if (!sourceUrl) {
-      const files = await openFileSelector();
-      if (!files) {
-        return;
-      }
-      file = files[0];
-      // Start uploading stream
-      stream = file.stream();
-    }
-    const uuid = createUuid();
-    const convertPath = this.context.convertPath;
-    let convertUrl = convertPath + "/" + uuid + ".m3u8";
-    convertUrl += sourceUrl ? "?url=" + encodeURIComponent(sourceUrl) : "";
-    // Wait for the playlist to get generated
-    const poll = async () => {
-      let ok = false;
-      let i = 0;
-      while (!ok && i < 30) {
-        await new Promise((resolve) => setTimeout(resolve, 2000));
-        const resp = await fetch(convertUrl);
-        ok = resp.ok;
-        i += 1;
-      }
-      // Same URL but GET
-      this.roomSetMedia(convertUrl);
-    };
-    poll();
-    const reader = stream.getReader();
-    const start = Date.now();
-    let bytes = 0;
-    const ws = new WebSocket(convertUrl.replace("http", "ws"));
-    ws.onmessage = async (_ev) => {
-      // Server sends a message whenever it wants next chunk
-      const { done, value } = await reader.read();
-      if (value) {
-        ws.send(value);
-      }
-      if (done) {
-        ws.close();
-      }
-      const end = Date.now();
-      bytes += value?.length ?? 0;
-      this.setState({
-        downloaded: bytes,
-        total: file?.size,
-        speed: done ? 0 : bytes / ((end - start) / 1000),
-        connections: 1,
-      });
-    };
-    ws.onclose = () => {
-      this.setState({ uploadController: undefined });
-    };
-    const controller = new AbortController();
-    controller.signal.onabort = (_ev) => {
-      ws.close();
-    };
-    this.setState({
-      uploadController: controller,
-    });
-    // Note: If using fetch we can't read the response until the request completes
-    // await fetch(convertUrl, {
-    //   method: 'POST',
-    //   body: stream,
-    //   signal: this.state.uploadController?.signal,
-    //   //@ts-expect-error
-    //   duplex: 'half',
-    // });
-  };
-
-  startFileShare = async (useMediaSoup: boolean) => {
+  startFileShare = async () => {
     const files = await openFileSelector();
     if (!files) {
       return;
@@ -1248,14 +1160,11 @@ export class App extends React.Component<AppProps, AppState> {
     this.localStreamToPublish = leftVideo?.captureStream();
     this.isLocalStreamAFile = true;
     if (this.localStreamToPublish) {
-      this.socket.emit("CMD:joinScreenShare", {
-        file: true,
-        mediasoup: useMediaSoup,
-      });
+      this.socket.emit("CMD:joinScreenShare", { file: true });
     }
   };
 
-  startScreenShare = async (useMediaSoup: boolean) => {
+  startScreenShare = async () => {
     if (navigator.mediaDevices.getDisplayMedia) {
       const stream = await navigator.mediaDevices.getDisplayMedia({
         //@ts-expect-error
@@ -1271,365 +1180,8 @@ export class App extends React.Component<AppProps, AppState> {
       });
       this.localStreamToPublish = stream;
       this.isLocalStreamAFile = false;
-      this.socket.emit("CMD:joinScreenShare", {
-        file: false,
-        mediasoup: useMediaSoup,
-      });
+      this.socket.emit("CMD:joinScreenShare", { file: false });
     }
-  };
-
-  // Share the video to mediasoup
-  publishMediasoup = async (mediasoupURL: string) => {
-    const localStream = this.localStreamToPublish;
-    let device: MediasoupClient.types.Device = null as any;
-    let producerTransport: MediasoupClient.types.Transport = null as any;
-
-    // =========== socket.io ==========
-    const connectSocket = (mediasoupURL: string) => {
-      return new Promise<void>((resolve, reject) => {
-        this.mediasoupPubSocket = io(mediasoupURL, {
-          transports: ["websocket"],
-        });
-
-        const socket = this.mediasoupPubSocket;
-        socket?.on("connect", function () {
-          console.log("PUBLISH: connected to socket.io");
-          resolve();
-        });
-        socket?.on("error", function (err) {
-          console.error("PUBLISH: socket.io ERROR:", err);
-          reject(err);
-        });
-      });
-    };
-
-    const sendRequest = (type: string, data: any) => {
-      return new Promise<any>((resolve, reject) => {
-        const socket = this.mediasoupPubSocket;
-        socket?.emit(type, data, (err: any, response: any) => {
-          if (!err) {
-            // Success response, so pass the mediasoup response to the local Room.
-            resolve(response);
-          } else {
-            reject(err);
-          }
-        });
-      });
-    };
-
-    async function publish() {
-      // --- get transport info ---
-      console.log("PUBLISH: --- createProducerTransport --");
-      const params = await sendRequest("createProducerTransport", {});
-      console.log("PUBLISH: transport params:", params);
-      producerTransport = device.createSendTransport(params);
-      console.log("PUBLISH: createSendTransport:", producerTransport);
-
-      // --- join & start publish --
-      producerTransport.on(
-        "connect",
-        async (
-          {
-            dtlsParameters,
-          }: { dtlsParameters: MediasoupClient.types.DtlsParameters },
-          callback: () => void,
-          errback: (error: Error) => void,
-        ) => {
-          console.log("PUBLISH: --transport connect");
-          sendRequest("connectProducerTransport", {
-            dtlsParameters: dtlsParameters,
-          })
-            .then(callback)
-            .catch(errback);
-        },
-      );
-
-      producerTransport.on(
-        "produce",
-        async (
-          {
-            kind,
-            rtpParameters,
-          }: {
-            kind: string;
-            rtpParameters: MediasoupClient.types.RtpParameters;
-          },
-          callback: ({ id }: { id: string }) => void,
-          errback: (error: Error) => void,
-        ) => {
-          console.log("PUBLISH: --transport produce");
-          try {
-            const { id } = await sendRequest("produce", {
-              transportId: producerTransport.id,
-              kind,
-              rtpParameters,
-            });
-            callback({ id });
-          } catch (err: any) {
-            errback(err);
-          }
-        },
-      );
-
-      // producerTransport.on('connectionstatechange', (state: string) => {
-      //   switch (state) {
-      //     case 'connecting':
-      //       console.log('PUBLISH: connecting');
-      //       break;
-
-      //     case 'connected':
-      //       console.log('PUBLISH: connected');
-      //       break;
-
-      //     case 'failed':
-      //       console.log('PUBLISH: failed');
-      //       producerTransport.close();
-      //       break;
-
-      //     default:
-      //       break;
-      //   }
-      // });
-
-      const videoTrack = localStream?.getVideoTracks()[0];
-      if (videoTrack) {
-        const trackParams = { track: videoTrack };
-        await producerTransport.produce(trackParams);
-      }
-      const audioTrack = localStream?.getAudioTracks()[0];
-      if (audioTrack) {
-        const trackParams = { track: audioTrack };
-        await producerTransport.produce(trackParams);
-      }
-    }
-
-    async function loadDevice(
-      routerRtpCapabilities: MediasoupClient.types.RtpCapabilities,
-    ) {
-      const { Device } = await import("mediasoup-client");
-      device = new Device();
-      await device.load({ routerRtpCapabilities });
-    }
-
-    await connectSocket(mediasoupURL);
-    // --- get capabilities --
-    const data = await sendRequest("getRouterRtpCapabilities", {});
-    console.log("PUBLISH: getRouterRtpCapabilities:", data);
-    await loadDevice(data);
-    await publish();
-  };
-
-  // Play the video from MediaSoup
-  subscribeMediasoup = async (mediaSoupURL: string) => {
-    let device: MediasoupClient.types.Device = null as any;
-    let consumerTransport: MediasoupClient.types.Transport = null as any;
-    // =========== socket.io ==========
-
-    const connectSocket = () => {
-      return new Promise<void>((resolve, reject) => {
-        this.mediasoupSubSocket = io(mediaSoupURL, {
-          transports: ["websocket"],
-        });
-        const socket = this.mediasoupSubSocket;
-        socket?.on("connect", function () {
-          console.log("SUBSCRIBE: connected to socket.io");
-          resolve();
-        });
-        socket?.on("error", function (err) {
-          console.error("SUBSCRIBE: socket.io ERROR:", err);
-          reject(err);
-        });
-        socket?.on("newProducer", async function (message) {
-          console.log("SUBSCRIBE: socket.io newProducer:", message);
-          if (consumerTransport) {
-            // start consume
-            if (message.kind === "video") {
-              await consumeAndResume(message.kind);
-            } else if (message.kind === "audio") {
-              await consumeAndResume(message.kind);
-            }
-          }
-        });
-
-        // socket?.on('producerClosed', function (message) {
-        //   console.log('socket.io producerClosed:', message);
-        //   const localId = message.localId;
-        //   const remoteId = message.remoteId;
-        //   const kind = message.kind;
-        //   if (kind === 'video') {
-        //     if (videoConsumer) {
-        //       videoConsumer.close();
-        //       videoConsumer = null;
-        //     }
-        //   } else if (kind === 'audio') {
-        //     if (audioConsumer) {
-        //       audioConsumer.close();
-        //       audioConsumer = null;
-        //     }
-        //   }
-        // });
-      });
-    };
-
-    const sendRequest = (type: string, data: any) => {
-      return new Promise<any>((resolve, reject) => {
-        const socket = this.mediasoupSubSocket;
-        socket?.emit(type, data, (err: Error, response: any) => {
-          if (!err) {
-            // Success response, so pass the mediasoup response to the local Room.
-            resolve(response);
-          } else {
-            reject(err);
-          }
-        });
-      });
-    };
-
-    // =========== media handling ==========
-    const addRemoteTrack = (track: MediaStreamTrack) => {
-      let video = this.HTMLInterface.getVideoEl();
-      if (video.srcObject) {
-        // Track already exists, add it
-        (video.srcObject as MediaStream).addTrack(track);
-      } else {
-        const mediaStream = new MediaStream();
-        mediaStream.addTrack(track);
-        video.srcObject = mediaStream;
-      }
-      this.localPlay();
-    };
-
-    async function consumeAndResume(kind: string) {
-      const consumer = await consume(consumerTransport, kind);
-      if (consumer) {
-        console.log("SUBSCRIBE: -- track exist, consumer ready. kind=" + kind);
-        if (kind === "video") {
-          console.log("SUBSCRIBE: -- resume kind=" + kind);
-          sendRequest("resume", { kind: kind })
-            .then(() => {
-              console.log("SUBSCRIBE: resume OK");
-              return consumer;
-            })
-            .catch((err) => {
-              console.error("SUBSCRIBE: resume ERROR:", err);
-              return consumer;
-            });
-        } else {
-          console.log("SUBSCRIBE: -- do not resume kind=" + kind);
-        }
-      } else {
-        console.log("SUBSCRIBE: -- no consumer yet. kind=" + kind);
-        return null;
-      }
-    }
-
-    async function loadDevice(
-      routerRtpCapabilities: MediasoupClient.types.RtpCapabilities,
-    ) {
-      try {
-        const { Device } = await import("mediasoup-client");
-        device = new Device();
-        await device.load({ routerRtpCapabilities });
-      } catch (error: any) {
-        if (error.name === "UnsupportedError") {
-          console.error("browser not supported");
-        }
-      }
-    }
-
-    async function consume(
-      transport: MediasoupClient.types.Transport,
-      trackKind: string,
-    ) {
-      console.log("SUBSCRIBE: --start of consume --kind=" + trackKind);
-      const { rtpCapabilities } = device;
-      const data = await sendRequest("consume", {
-        rtpCapabilities: rtpCapabilities,
-        kind: trackKind,
-      }).catch((err) => {
-        console.error("SUBSCRIBE: ERROR:", err);
-      });
-      const { producerId, id, kind, rtpParameters } = data;
-
-      if (producerId) {
-        let codecOptions = {};
-        const consumer = await transport.consume({
-          id,
-          producerId,
-          kind,
-          rtpParameters,
-          //@ts-expect-error
-          codecOptions,
-        });
-
-        addRemoteTrack(consumer.track);
-        console.log("SUBSCRIBE: --end of consume");
-        return consumer;
-      } else {
-        console.warn("SUBSCRIBE: ---remote producer NOT READY");
-        return null;
-      }
-    }
-
-    async function subscribe() {
-      console.log("SUBSCRIBE: ---createConsumerTransport --");
-      const params = await sendRequest("createConsumerTransport", {});
-      console.log("SUBSCRIBE: transport params:", params);
-      consumerTransport = device.createRecvTransport(params);
-      console.log("SUBSCRIBE: createConsumerTransport:", consumerTransport);
-
-      // --- join & start watching
-      consumerTransport.on(
-        "connect",
-        async (
-          {
-            dtlsParameters,
-          }: { dtlsParameters: MediasoupClient.types.DtlsParameters },
-          callback: () => void,
-          errback: (err: Error) => void,
-        ) => {
-          console.log("SUBSCRIBE: ---consumer transport connect");
-          sendRequest("connectConsumerTransport", {
-            dtlsParameters: dtlsParameters,
-          })
-            .then(callback)
-            .catch(errback);
-        },
-      );
-
-      // consumerTransport.on('connectionstatechange', (state: string) => {
-      //   switch (state) {
-      //     case 'connecting':
-      //       console.log('SUBSCRIBE: connecting');
-      //       break;
-
-      //     case 'connected':
-      //       console.log('SUBSCRIBE: connected');
-      //       break;
-
-      //     case 'failed':
-      //       console.log('SUBSCRIBE: failed');
-      //       consumerTransport.close();
-      //       break;
-
-      //     default:
-      //       break;
-      //   }
-      // });
-
-      await consumeAndResume("video");
-      await consumeAndResume("audio");
-    }
-
-    // Clear the srcobject so we load our stream when received
-    const leftVideo = this.HTMLInterface.getVideoEl();
-    leftVideo.srcObject = null;
-    await connectSocket();
-    // --- get capabilities --
-    const data = await sendRequest("getRouterRtpCapabilities", {});
-    console.log("getRouterRtpCapabilities:", data);
-    await loadDevice(data);
-    await subscribe();
   };
 
   stopPublishingLocalStream = async () => {
@@ -1652,14 +1204,6 @@ export class App extends React.Component<AppProps, AppState> {
     });
     this.publisherConns = {};
     this.isLocalStreamAFile = false;
-    if (this.mediasoupPubSocket) {
-      this.mediasoupPubSocket.close();
-      this.mediasoupPubSocket = null;
-    }
-    if (this.mediasoupSubSocket) {
-      this.mediasoupSubSocket.close();
-      this.mediasoupSubSocket = null;
-    }
   };
 
   setupRTCConnections = async () => {
@@ -1673,24 +1217,6 @@ export class App extends React.Component<AppProps, AppState> {
       // Stop sharing if the local stream stops
       localTrack.onended = () => this.stopPublishingLocalStream();
     }
-    if (this.state.roomMedia.includes("@")) {
-      let prefix = "screenshare://";
-      if (this.playingFileShare()) {
-        prefix = "fileshare://";
-      }
-      const unprefixed = this.state.roomMedia.replace(prefix, "");
-      const mediasoupURL = unprefixed.split("@")[1];
-      if (sharer?.id === selfId && this.mediasoupPubSocket == null) {
-        await this.publishMediasoup(mediasoupURL);
-      }
-      // If we're not sharing a file, also start watching
-      // avoid duplicate watching if the socket already exists
-      if (!this.isLocalStreamAFile && this.mediasoupSubSocket == null) {
-        await this.subscribeMediasoup(mediasoupURL);
-      }
-      return;
-    }
-
     // We're the sharer, create a connection to each other member
     if (sharer?.id === selfId) {
       // Delete and close any connections that aren't in the current member list (maybe someone disconnected)
@@ -1756,6 +1282,16 @@ export class App extends React.Component<AppProps, AppState> {
         }
       };
     }
+  };
+
+  // Screen sharing and the virtual browser are still being rebuilt; their buttons show this notice
+  showComingSoon = () => {
+    this.setState({
+      infoMessage: msg("This feature is still under construction. Stay tuned!"),
+    });
+    setTimeout(() => {
+      this.setState({ infoMessage: "" });
+    }, 3000);
   };
 
   startVBrowser = async (options: { size: string }) => {
@@ -2057,7 +1593,9 @@ export class App extends React.Component<AppProps, AppState> {
       return t("{name}'s file", { name: this.state.nameMap[sharer?.id ?? ""] });
     }
     if (input.startsWith("vbrowser://")) {
-      return t("Virtual Browser") + (this.state.isVBrowserLarge ? "+" : "");
+      return this.state.isVBrowserLarge
+        ? t("Large Virtual Browser")
+        : t("Virtual Browser");
     }
     if (isMagnet(input)) {
       const magnetParsed = new URLSearchParams(input);
@@ -2177,26 +1715,12 @@ export class App extends React.Component<AppProps, AppState> {
             streams={this.state.fileSelection}
             setMedia={this.roomSetMedia}
             resetMultiSelect={this.resetMultiSelect}
-            startConvert={this.startConvert}
-          />
-        )}
-        {this.state.isVBrowserModalOpen && (
-          <VBrowserModal
-            closeModal={() => this.setState({ isVBrowserModalOpen: false })}
-            startVBrowser={this.startVBrowser}
-          />
-        )}
-        {this.state.isScreenShareModalOpen && (
-          <ScreenShareModal
-            closeModal={() => this.setState({ isScreenShareModalOpen: false })}
-            startScreenShare={this.startScreenShare}
           />
         )}
         {this.state.isFileShareModalOpen && (
           <FileShareModal
             closeModal={() => this.setState({ isFileShareModalOpen: false })}
             startFileShare={this.startFileShare}
-            startConvert={this.startConvert}
           />
         )}
         {this.state.isSubtitleModalOpen && (
@@ -2283,6 +1807,20 @@ export class App extends React.Component<AppProps, AppState> {
             {t(this.state.successMessage)}
           </Alert>
         )}
+        {this.state.infoMessage && (
+          <Alert
+            color="blue"
+            style={{
+              position: "fixed",
+              top: "10px",
+              left: "50%",
+              transform: "translate(-50%, 0)",
+              zIndex: 1000,
+            }}
+          >
+            {t(this.state.infoMessage)}
+          </Alert>
+        )}
         {this.state.warningMessage && (
           <Alert
             color="yellow"
@@ -2358,11 +1896,7 @@ export class App extends React.Component<AppProps, AppState> {
                             className={styles.shareButton}
                             color="blue"
                             disabled={!this.haveLock()}
-                            onClick={() => {
-                              this.setState({
-                                isScreenShareModalOpen: true,
-                              });
-                            }}
+                            onClick={this.showComingSoon}
                             leftSection={<IconScreenShare />}
                           >
                             {t("Screenshare")}
@@ -2375,11 +1909,7 @@ export class App extends React.Component<AppProps, AppState> {
                             className={styles.shareButton}
                             disabled={!this.haveLock()}
                             color="green"
-                            onClick={() => {
-                              this.setState({
-                                isVBrowserModalOpen: true,
-                              });
-                            }}
+                            onClick={this.showComingSoon}
                             leftSection={<IconBrowser />}
                           >
                             {t("VBrowser")}
@@ -2418,7 +1948,7 @@ export class App extends React.Component<AppProps, AppState> {
                             }
                             data={[
                               {
-                                label: t("1080p (Plus only)"),
+                                label: t("1080p (large VBrowser only)"),
                                 value: "1920x1080@30",
                                 disabled: !this.state.isVBrowserLarge,
                               },
@@ -2491,17 +2021,6 @@ export class App extends React.Component<AppProps, AppState> {
                             {t("File")}
                           </Button>
                         )}
-                      {this.state.uploadController && (
-                        <Button
-                          color="red"
-                          onClick={() => {
-                            this.state.uploadController?.abort();
-                          }}
-                          leftSection={<IconX />}
-                        >
-                          {t("Stop Convert")}
-                        </Button>
-                      )}
                       {false && (
                         <SearchComponent
                           setMedia={this.roomSetMedia}

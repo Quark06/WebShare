@@ -14,7 +14,6 @@ import firebase from "firebase/compat/app";
 import "firebase/auth";
 import { serverPath, softWhite } from "./utils/utils";
 import { Create } from "./components/Create/Create";
-import { Discord } from "./components/Discord/Discord";
 import {
   DiscordLogin,
   discordLoginKey,
@@ -57,18 +56,10 @@ class WebShare extends React.Component {
           );
           const data = await response.json();
           this.setState({
-            isSubscriber: data.isSubscriber,
-            subscriptionsEnabled: Boolean(data.subscriptionsEnabled),
             streamPath: data.streamPath,
-            convertPath: data.convertPath,
             beta: data.beta,
           });
         }
-      });
-    } else {
-      // Firebase isn't set up so enable subscriber features
-      this.setState({
-        isSubscriber: true,
       });
     }
   }
@@ -151,9 +142,6 @@ class WebShare extends React.Component {
               <TopBar />
               <FAQ />
               <Footer />
-            </Route>
-            <Route path="/discord/auth" exact>
-              <Discord />
             </Route>
             <Route path="/debug">
               <TopBar />
