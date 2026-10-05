@@ -15,6 +15,7 @@
     "test:resolvers": "node scripts/verify-resolvers.mjs",
     "test:discord-auth": "node scripts/verify-discord-auth.mjs",
     "test:rooms": "node scripts/verify-rooms.mjs",
+    "test:i18n": "node scripts/verify-i18n.mjs",
     "buildReact": "vite build && npm run typecheck",
     "pm2": "pm2 startOrRestart ecosystem.config.cjs --only webshare --update-env",
     "deploy": "node scripts/deploy.mjs",

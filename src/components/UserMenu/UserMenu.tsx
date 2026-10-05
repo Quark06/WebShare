@@ -4,6 +4,7 @@ import { Socket } from "socket.io-client";
 // import styles from './UserMenu.module.css';
 import { MetadataContext } from "../../MetadataContext";
 import { IconBan, IconTrashFilled, IconX } from "@tabler/icons-react";
+import { t } from "../../i18n";
 
 export const UserMenu = ({
   socket,
@@ -44,7 +45,7 @@ export const UserMenu = ({
               });
             }}
           >
-            Delete Message
+            {t("Delete Message")}
           </Menu.Item>
         )}
         <Menu.Item
@@ -55,7 +56,7 @@ export const UserMenu = ({
             });
           }}
         >
-          Delete User's Messages
+          {t("Delete User's Messages")}
         </Menu.Item>
         <Menu.Item
           leftSection={<IconBan />}
@@ -65,7 +66,7 @@ export const UserMenu = ({
             });
           }}
         >
-          Kick User
+          {t("Kick User")}
         </Menu.Item>
       </Menu.Dropdown>
     </Menu>

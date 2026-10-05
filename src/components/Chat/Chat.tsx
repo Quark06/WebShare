@@ -30,10 +30,22 @@ import {
   TransitionGroup,
 } from "react-transition-group";
 import { MetadataContext } from "../../MetadataContext";
+import { t } from "../../i18n";
 
 const clientId = getOrCreateClientId();
 const truncateReply = (input?: string, max = 30) =>
   input && input.length > max ? `${input.slice(0, max)}...` : input || "";
+// Puts a node where {media} is, so each language keeps its own word order
+const withMedia = (text: string, media: React.ReactNode) => {
+  const [before, after] = text.split("{media}");
+  return (
+    <React.Fragment>
+      {before}
+      {media}
+      {after}
+    </React.Fragment>
+  );
+};
 
 interface ChatProps {
   chat: ChatMessage[];
@@ -178,51 +190,51 @@ export class Chat extends React.Component<ChatProps> {
 
   formatMessage = (cmd: string, msg?: string): React.ReactNode | string => {
     if (cmd === "host") {
-      return (
-        <React.Fragment>
-          {`changed the video to `}
-          <span style={{ textTransform: "initial" }}>
-            {this.props.getMediaDisplayName(msg)}
-          </span>
-        </React.Fragment>
+      return withMedia(
+        t("changed the video to {media}"),
+        <span style={{ textTransform: "initial" }}>
+          {this.props.getMediaDisplayName(msg)}
+        </span>,
       );
     } else if (cmd === "playlistAdd") {
-      return (
-        <React.Fragment>
-          {`added to the playlist: `}
-          <span style={{ textTransform: "initial" }}>
-            {this.props.getMediaDisplayName(msg)}
-          </span>
-        </React.Fragment>
+      return withMedia(
+        t("added to the playlist: {media}"),
+        <span style={{ textTransform: "initial" }}>
+          {this.props.getMediaDisplayName(msg)}
+        </span>,
       );
     } else if (cmd === "playlistImport") {
-      return `imported ${msg} songs to the playlist`;
+      return t("imported {count} songs to the playlist", {
+        count: String(msg),
+      });
     } else if (cmd === "seek") {
-      return `jumped to ${formatTimestamp(msg)}`;
+      return t("jumped to {time}", { time: formatTimestamp(msg) });
     } else if (cmd === "play") {
-      return `started the video at ${formatTimestamp(msg)}`;
+      return t("started the video at {time}", { time: formatTimestamp(msg) });
     } else if (cmd === "pause") {
-      return `paused the video at ${formatTimestamp(msg)}`;
+      return t("paused the video at {time}", { time: formatTimestamp(msg) });
     } else if (cmd === "playbackRate") {
-      return `set the playback rate to ${msg === "0" ? "auto" : `${msg}x`}`;
+      return msg === "0"
+        ? t("set the playback rate to auto")
+        : t("set the playback rate to {rate}x", { rate: String(msg) });
     } else if (cmd === "lock") {
-      return `locked the room`;
+      return t("locked the room");
     } else if (cmd === "unlock") {
-      return "unlocked the room";
+      return t("unlocked the room");
     } else if (cmd === "vBrowserTimeout") {
       return (
         <React.Fragment>
-          The VBrowser shut down automatically.
+          {t("The VBrowser shut down automatically.")}
           <br />
-          Subscribe for longer sessions.
+          {t("Subscribe for longer sessions.")}
         </React.Fragment>
       );
     } else if (cmd === "vBrowserAlmostTimeout") {
       return (
         <React.Fragment>
-          The VBrowser will shut down soon.
+          {t("The VBrowser will shut down soon.")}
           <br />
-          Subscribe for longer sessions.
+          {t("Subscribe for longer sessions.")}
         </React.Fragment>
       );
     }
@@ -288,7 +300,7 @@ export class Chat extends React.Component<ChatProps> {
                 margin: "0 auto",
               }}
             >
-              Jump to bottom
+              {t("Jump to bottom")}
             </Button>
           )}
         </div>
@@ -358,7 +370,10 @@ export class Chat extends React.Component<ChatProps> {
             }}
           >
             <div className={styles.small + " " + styles.light}>
-              Replying to {this.props.nameMap[this.state.replyTo.id] || "Unknown"}
+              {t("Replying to {name}", {
+                name:
+                  this.props.nameMap[this.state.replyTo.id] || t("Unknown"),
+              })}
               {this.state.replyTo.msg ? (
                 <div
                   style={{
@@ -373,7 +388,7 @@ export class Chat extends React.Component<ChatProps> {
               ) : null}
             </div>
             <Button size="xs" variant="subtle" onClick={this.clearReplyTo}>
-              Cancel
+              {t("Cancel")}
             </Button>
           </div>
         )}
@@ -387,8 +402,8 @@ export class Chat extends React.Component<ChatProps> {
           disabled={this.props.isChatDisabled}
           placeholder={
             this.props.isChatDisabled
-              ? "The chat was disabled by the room owner."
-              : "Enter a message..."
+              ? t("The chat was disabled by the room owner.")
+              : t("Enter a message...")
           }
           rightSection={
             <ActionIcon
@@ -399,7 +414,7 @@ export class Chat extends React.Component<ChatProps> {
               }}
               disabled={this.props.isChatDisabled}
             >
-              <span role="img" aria-label="Emoji">
+              <span role="img" aria-label={t("Emoji")}>
                 😀
               </span>
             </ActionIcon>
@@ -488,10 +503,10 @@ const ChatMessage = ({
             trigger={
               <div
                 style={{ cursor: "pointer", fontWeight: 700 }}
-                title={isSub ? "WebShare Plus subscriber" : ""}
+                title={isSub ? t("WebShare Plus subscriber") : ""}
                 className={`${isSub ? styles.subscriber : styles.light} ${styles.hoverEffect}`}
               >
-                {Boolean(system) && "System"}
+                {Boolean(system) && t("System")}
                 {nameMap[id] || id}
               </div>
             }
@@ -511,7 +526,9 @@ const ChatMessage = ({
           <HoverCard withinPortal={false} openDelay={120}>
             <HoverCard.Target>
               <div className={styles.replyInfo}>
-                {`Replying to @${nameMap[message.replyToUserId] || "user"}: `}
+                {t("Replying to @{name}: ", {
+                  name: nameMap[message.replyToUserId] || t("user"),
+                })}
                 {truncateReply(message.replyToMsg, 30)}
               </div>
             </HoverCard.Target>
@@ -555,7 +572,11 @@ const ChatMessage = ({
                 marginRight: 4,
               }}
             >
-              <span role="img" aria-label="Reply" style={{ margin: 0, fontSize: 16 }}>
+              <span
+                role="img"
+                aria-label={t("Reply")}
+                style={{ margin: 0, fontSize: 16 }}
+              >
                 ↩
               </span>
             </ActionIcon>
@@ -586,7 +607,7 @@ const ChatMessage = ({
           >
             <span
               role="img"
-              aria-label="React"
+              aria-label={t("React")}
               style={{ margin: 0, fontSize: 18 }}
             >
               😀
@@ -656,20 +677,26 @@ const ChatMessage = ({
                     </div>
                   </HoverCard.Target>
                   <HoverCard.Dropdown>
-                    {`${reactions[key]
-                      .slice(0, spellFull)
-                      .map((id) => nameMap[id] || "Unknown")
-                      .concat(
-                        reactions[key].length > spellFull
-                          ? [`${reactions[key].length - spellFull} more`]
-                          : [],
-                      )
-                      .reduce(
-                        (text, value, i, array) =>
-                          text +
-                          (i < array.length - 1 ? ", " : " and ") +
-                          value,
-                      )} reacted.`}
+                    {t("{names} reacted.", {
+                      names: reactions[key]
+                        .slice(0, spellFull)
+                        .map((id) => nameMap[id] || t("Unknown"))
+                        .concat(
+                          reactions[key].length > spellFull
+                            ? [
+                                t("{count} more", {
+                                  count: reactions[key].length - spellFull,
+                                }),
+                              ]
+                            : [],
+                        )
+                        .reduce(
+                          (text, value, i, array) =>
+                            text +
+                            (i < array.length - 1 ? t(", ") : t(" and ")) +
+                            value,
+                        ),
+                    })}
                   </HoverCard.Dropdown>
                 </HoverCard>
               </CSSTransition>

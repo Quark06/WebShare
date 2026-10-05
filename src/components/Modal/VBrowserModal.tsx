@@ -6,6 +6,7 @@ import { SubscribeButton } from "../SubscribeButton/SubscribeButton";
 import config from "../../config";
 import { MetadataContext } from "../../MetadataContext";
 import { IconHourglass } from "@tabler/icons-react";
+import { t } from "../../i18n";
 
 export class VBrowserModal extends React.Component<{
   closeModal: () => void;
@@ -26,22 +27,22 @@ export class VBrowserModal extends React.Component<{
   render() {
     const regionOptions = [
       {
-        label: "Any available",
+        label: t("Any available"),
         value: "any",
         image: { avatar: false, src: "" },
       },
       {
-        label: "US East",
+        label: t("US East"),
         value: "US",
         image: { avatar: false, src: "/flag-united-states.png" },
       },
       {
-        label: "US West",
+        label: t("US West"),
         value: "USW",
         image: { avatar: false, src: "/flag-united-states.png" },
       },
       {
-        label: "Europe",
+        label: t("Europe"),
         value: "EU",
         image: { avatar: false, src: "/flag-european-union.png" },
       },
@@ -59,7 +60,7 @@ export class VBrowserModal extends React.Component<{
             closeModal();
           }}
         >
-          {large ? "Launch VBrowser+" : "Continue with Free"}
+          {large ? t("Launch VBrowser+") : t("Continue with Free")}
         </Button>
       );
     };
@@ -68,13 +69,14 @@ export class VBrowserModal extends React.Component<{
         style={{ maxWidth: "300px" }}
         color="red"
         icon={<IconHourglass />}
-        title="No Free VBrowsers Available"
+        title={t("No Free VBrowsers Available")}
       >
         <div>
-          <div>All of the free VBrowsers are currently being used.</div>
+          <div>{t("All of the free VBrowsers are currently being used.")}</div>
           <div>
-            Please consider subscribing for anytime access to faster VBrowsers,
-            or try again later.
+            {t(
+              "Please consider subscribing for anytime access to faster VBrowsers, or try again later.",
+            )}
           </div>
         </div>
       </Alert>
@@ -87,46 +89,46 @@ export class VBrowserModal extends React.Component<{
       <Modal
         opened
         onClose={closeModal}
-        title="Launch a VBrowser"
+        title={t("Launch a VBrowser")}
         centered
         size="auto"
       >
         <div>
-          You're about to launch a virtual browser to share in this room.
+          {t("You're about to launch a virtual browser to share in this room.")}
         </div>
         <Table striped>
           <Table.Thead>
             <Table.Tr>
               <Table.Th />
-              <Table.Th>WebShare Free</Table.Th>
+              <Table.Th>{t("WebShare Free")}</Table.Th>
               <Table.Th>WebShare Plus</Table.Th>
             </Table.Tr>
           </Table.Thead>
 
           <Table.Tbody>
             <Table.Tr>
-              <Table.Td>VBrowser Max Resolution</Table.Td>
+              <Table.Td>{t("VBrowser Max Resolution")}</Table.Td>
               <Table.Td>720p</Table.Td>
               <Table.Td>1080p</Table.Td>
             </Table.Tr>
             <Table.Tr>
-              <Table.Td>VBrowser CPU/RAM</Table.Td>
-              <Table.Td>Standard</Table.Td>
-              <Table.Td>Extra</Table.Td>
+              <Table.Td>{t("VBrowser CPU/RAM")}</Table.Td>
+              <Table.Td>{t("Standard")}</Table.Td>
+              <Table.Td>{t("Extra")}</Table.Td>
             </Table.Tr>
             <Table.Tr>
-              <Table.Td>VBrowser Session Length</Table.Td>
-              <Table.Td>3 hours</Table.Td>
-              <Table.Td>24 hours</Table.Td>
+              <Table.Td>{t("VBrowser Session Length")}</Table.Td>
+              <Table.Td>{t("{count} hours", { count: 3 })}</Table.Td>
+              <Table.Td>{t("{count} hours", { count: 24 })}</Table.Td>
             </Table.Tr>
             <Table.Tr>
-              <Table.Td>Recommended Max Viewers</Table.Td>
+              <Table.Td>{t("Recommended Max Viewers")}</Table.Td>
               <Table.Td>15</Table.Td>
               <Table.Td>30</Table.Td>
             </Table.Tr>
             <Table.Tr>
-              <Table.Td>Region</Table.Td>
-              <Table.Td>Where available </Table.Td>
+              <Table.Td>{t("Region")}</Table.Td>
+              <Table.Td>{t("Where available")}</Table.Td>
               <Table.Td>
                 <Select
                   onChange={(value, option) => this.setState({ region: value })}

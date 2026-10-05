@@ -12,6 +12,7 @@ import {
 } from "../../utils/utils";
 import { UserMenu } from "../UserMenu/UserMenu";
 import { MetadataContext } from "../../MetadataContext";
+import { t } from "../../i18n";
 import {
   IconDotsVertical,
   IconMicrophone,
@@ -324,7 +325,7 @@ export class VideoChat extends React.Component<VideoChatProps> {
                         onClick={this.setupWebRTC}
                         leftSection={<IconVideo />}
                       >
-                        Join
+                        {t("Join")}
                       </Button>
                     )}
                     {ourStream && p.id === selfId && (
@@ -334,7 +335,7 @@ export class VideoChat extends React.Component<VideoChatProps> {
                         onClick={this.stopWebRTC}
                         leftSection={<IconX />}
                       >
-                        Leave
+                        {t("Leave")}
                       </Button>
                     )}
                     {ourStream && p.id === selfId && (

@@ -1,10 +1,11 @@
 import React from "react";
 import { Modal, Button } from "@mantine/core";
 import { IconHome, IconRefresh } from "@tabler/icons-react";
+import { t } from "../../i18n";
 
 export const ErrorModal = ({ error }: { error: string }) => {
   return (
-    <Modal opened onClose={() => {}} title={error} centered>
+    <Modal opened onClose={() => {}} title={t(error)} centered>
       <div
         style={{
           display: "flex",
@@ -20,7 +21,7 @@ export const ErrorModal = ({ error }: { error: string }) => {
           }}
           leftSection={<IconRefresh />}
         >
-          Try again
+          {t("Try again")}
         </Button>
         <Button
           size="xl"
@@ -29,7 +30,7 @@ export const ErrorModal = ({ error }: { error: string }) => {
           }}
           leftSection={<IconHome />}
         >
-          Go to home
+          {t("Go to home")}
         </Button>
       </div>
     </Modal>

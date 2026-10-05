@@ -14,6 +14,7 @@ import {
   IconBrandGoogleFilled,
 } from "@tabler/icons-react";
 import config from "../../config";
+import { t } from "../../i18n";
 
 export class LoginModal extends React.Component<{
   closeModal: () => void;
@@ -67,7 +68,13 @@ export class LoginModal extends React.Component<{
         {this.state.showReset && (
           <ResetModal closeModal={() => this.setState({ showReset: false })} />
         )}
-        <Modal opened onClose={closeModal} title="Login" size="auto" centered>
+        <Modal
+          opened
+          onClose={closeModal}
+          title={t("Login")}
+          size="auto"
+          centered
+        >
           <div>
             <div style={{ display: "flex", gap: "4px" }}>
               {enabledOptions.includes("facebook") && (
@@ -90,7 +97,7 @@ export class LoginModal extends React.Component<{
             {enabledOptions.includes("email") && (
               <>
                 <Divider
-                  label="Or sign in with email"
+                  label={t("Or sign in with email")}
                   labelPosition="center"
                   my="lg"
                 />
@@ -106,27 +113,27 @@ export class LoginModal extends React.Component<{
                   }}
                 >
                   {this.state.error && (
-                    <Alert color="red" title="Error">
-                      {this.state.error}
+                    <Alert color="red" title={t("Error")}>
+                      {t(this.state.error)}
                     </Alert>
                   )}
                   <TextInput
-                    label="Email"
-                    placeholder="Email"
+                    label={t("Email")}
+                    placeholder={t("Email")}
                     value={this.state.email}
                     onChange={(e) => this.setState({ email: e.target.value })}
                   />
                   <PasswordInput
-                    label="Password"
-                    placeholder="Password"
+                    label={t("Password")}
+                    placeholder={t("Password")}
                     value={this.state.password}
                     onChange={(e) =>
                       this.setState({ password: e.target.value })
                     }
                   />
-                  <Button type="submit">Login</Button>
+                  <Button type="submit">{t("Login")}</Button>
                 </form>
-                <Divider label="Or" labelPosition="center" my="lg" />
+                <Divider label={t("Or")} labelPosition="center" my="lg" />
                 <div
                   style={{
                     display: "flex",
@@ -138,13 +145,13 @@ export class LoginModal extends React.Component<{
                     size="xs"
                     onClick={() => this.setState({ showCreate: true })}
                   >
-                    Create account
+                    {t("Create account")}
                   </Button>
                   <Button
                     size="xs"
                     onClick={() => this.setState({ showReset: true })}
                   >
-                    Reset password
+                    {t("Reset password")}
                   </Button>
                 </div>
               </>
@@ -176,7 +183,7 @@ export class CreateModal extends React.Component<{
       <Modal
         opened
         onClose={closeModal}
-        title="Create an account"
+        title={t("Create an account")}
         size="auto"
         centered
       >
@@ -188,23 +195,23 @@ export class CreateModal extends React.Component<{
           style={{ display: "flex", flexDirection: "column", gap: "8px" }}
         >
           {this.state.error && (
-            <Alert color="red" title="Error">
-              {this.state.error}
+            <Alert color="red" title={t("Error")}>
+              {t(this.state.error)}
             </Alert>
           )}
           <TextInput
-            label="Email"
-            placeholder="Email"
+            label={t("Email")}
+            placeholder={t("Email")}
             value={this.state.email}
             onChange={(e) => this.setState({ email: e.target.value })}
           />
           <PasswordInput
-            label="Password"
-            placeholder="Password"
+            label={t("Password")}
+            placeholder={t("Password")}
             value={this.state.password}
             onChange={(e) => this.setState({ password: e.target.value })}
           />
-          <Button type="submit">Create</Button>
+          <Button type="submit">{t("Create")}</Button>
         </form>
       </Modal>
     );
@@ -229,7 +236,7 @@ export class ResetModal extends React.Component<{
   render() {
     const { closeModal } = this.props;
     return (
-      <Modal opened onClose={closeModal} title="Reset password" centered>
+      <Modal opened onClose={closeModal} title={t("Reset password")} centered>
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -238,17 +245,17 @@ export class ResetModal extends React.Component<{
           style={{ display: "flex", flexDirection: "column", gap: "8px" }}
         >
           {this.state.error && (
-            <Alert color="red" title="Error">
-              {this.state.error}
+            <Alert color="red" title={t("Error")}>
+              {t(this.state.error)}
             </Alert>
           )}
           <TextInput
-            label="Email"
-            placeholder="Email"
+            label={t("Email")}
+            placeholder={t("Email")}
             value={this.state.email}
             onChange={(e) => this.setState({ email: e.target.value })}
           />
-          <Button type="submit">Reset</Button>
+          <Button type="submit">{t("Reset")}</Button>
         </form>
       </Modal>
     );

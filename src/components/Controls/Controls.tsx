@@ -3,6 +3,7 @@ import { Badge, Button, Menu, Progress, Slider } from "@mantine/core";
 import { formatTimestamp, softWhite } from "../../utils/utils";
 import styles from "./Controls.module.css";
 import { MetadataContext } from "../../MetadataContext";
+import { t } from "../../i18n";
 import {
   IconPlayerPlayFilled,
   IconPlayerPauseFilled,
@@ -145,7 +146,7 @@ export const Controls = (props: ControlsProps) => {
       )}
       {playlist.length > 0 && (
         <IconPlayerSkipForwardFilled
-          title="Skip to next"
+          title={t("Skip to next")}
           className={styles.action}
           onClick={() => roomPlaylistPlay(0)}
         />
@@ -162,7 +163,7 @@ export const Controls = (props: ControlsProps) => {
         <Button
           size="compact-xs"
           color={isBehind ? "blue" : "grey"}
-          title="Sync"
+          title={t("Sync")}
           onClick={() => {
             if (isLiveStream) {
               // in live case we want to seek the entire room to edge
@@ -172,7 +173,7 @@ export const Controls = (props: ControlsProps) => {
             }
           }}
         >
-          Sync
+          {t("Sync")}
         </Button>
         {/* <div style={{ position: 'absolute', fontSize: '6px', zIndex: -1 }}>
             {Math.max(Math.floor(behindTime), 0)}
@@ -256,7 +257,7 @@ export const Controls = (props: ControlsProps) => {
       <div className={` ${styles.text}`}>{formatTimestamp(getEnd())}</div>
       {isLiveStream && (
         <Badge size="xs" color="red">
-          LIVE
+          {t("LIVE")}
         </Badge>
       )}
       {
@@ -276,7 +277,7 @@ export const Controls = (props: ControlsProps) => {
           </Menu.Target>
           <Menu.Dropdown>
             {[
-              { key: "Auto", text: "Auto", value: 0 },
+              { key: "Auto", text: t("Auto"), value: 0 },
               { key: "0.25", text: "0.25x", value: 0.25 },
               { key: "0.5", text: "0.5x", value: 0.5 },
               // { key: '0.75', text: '0.75x', value: 0.75 },
@@ -307,7 +308,7 @@ export const Controls = (props: ControlsProps) => {
           }
         }}
         className={` ${styles.action}`}
-        title="Loop"
+        title={t("Loop")}
         color={props.loop ? "green" : softWhite}
       />
       {props.isYouTube ? (
@@ -317,9 +318,9 @@ export const Controls = (props: ControlsProps) => {
           </Menu.Target>
           <Menu.Dropdown>
             {[
-              { key: "hidden", text: "Off", value: "hidden" },
-              { key: "en", text: "English", value: "showing" },
-              { key: "es", text: "Spanish", value: "showing" },
+              { key: "hidden", text: t("Off"), value: "hidden" },
+              { key: "en", text: t("English"), value: "showing" },
+              { key: "es", text: t("Spanish"), value: "showing" },
             ].map((item) => (
               <Menu.Item
                 key={item.key}
@@ -341,19 +342,19 @@ export const Controls = (props: ControlsProps) => {
             localSubtitleModal();
           }}
           className={` ${styles.action}`}
-          title="Captions"
+          title={t("Captions")}
           color={subtitled ? "green" : softWhite}
         />
       )}
       <IconTheater
         onClick={() => localFullScreen(false)}
         className={` ${styles.action}`}
-        title="Theater Mode"
+        title={t("Theater Mode")}
       />
       <IconMaximize
         onClick={() => localFullScreen(true)}
         className={` ${styles.action}`}
-        title="Fullscreen"
+        title={t("Fullscreen")}
       />
       {muted ? (
         <IconVolumeOff

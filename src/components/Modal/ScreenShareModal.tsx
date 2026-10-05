@@ -2,6 +2,7 @@ import React, { useContext } from "react";
 import { Modal, Button, Table } from "@mantine/core";
 import { SubscribeButton } from "../SubscribeButton/SubscribeButton";
 import { MetadataContext } from "../../MetadataContext";
+import { t } from "../../i18n";
 
 export const ScreenShareModal = ({
   closeModal,
@@ -16,51 +17,55 @@ export const ScreenShareModal = ({
     <Modal
       opened={true}
       onClose={closeModal}
-      title="Share your screen"
+      title={t("Share your screen")}
       centered
       size="auto"
     >
-      <div>You're about to share your screen.</div>
+      <div>{t("You're about to share your screen.")}</div>
       <ul>
-        <li>This feature is only supported on Chrome and Edge on desktop.</li>
         <li>
-          Audio sharing only works if sharing your entire screen or a browser
-          tab, not an application.
+          {t("This feature is only supported on Chrome and Edge on desktop.")}
+        </li>
+        <li>
+          {t(
+            "Audio sharing only works if sharing your entire screen or a browser tab, not an application.",
+          )}
         </li>
       </ul>
       <Table striped>
         <Table.Thead>
           <Table.Tr>
             <Table.Th />
-            <Table.Th>WebShare Free</Table.Th>
+            <Table.Th>{t("WebShare Free")}</Table.Th>
             <Table.Th>WebShare Plus</Table.Th>
           </Table.Tr>
         </Table.Thead>
 
         <Table.Tbody>
           <Table.Tr>
-            <Table.Td>Method</Table.Td>
+            <Table.Td>{t("Method")}</Table.Td>
             <Table.Td>
-              Stream your video to each viewer from your device.
+              {t("Stream your video to each viewer from your device.")}
             </Table.Td>
             <Table.Td>
-              Stream your video to our relay server, which sends it to each
-              viewer, reducing bandwidth usage.
+              {t(
+                "Stream your video to our relay server, which sends it to each viewer, reducing bandwidth usage.",
+              )}
             </Table.Td>
           </Table.Tr>
           <Table.Tr>
-            <Table.Td>Latency</Table.Td>
+            <Table.Td>{t("Latency")}</Table.Td>
             <Table.Td>{`<1s`}</Table.Td>
             <Table.Td>{`<1s`}</Table.Td>
           </Table.Tr>
           <Table.Tr>
-            <Table.Td>Recommended Max Viewers</Table.Td>
+            <Table.Td>{t("Recommended Max Viewers")}</Table.Td>
             <Table.Td>5</Table.Td>
             <Table.Td>20</Table.Td>
           </Table.Tr>
           <Table.Tr>
-            <Table.Td>Recommended Upload Speed</Table.Td>
-            <Table.Td>5 Mbps per viewer</Table.Td>
+            <Table.Td>{t("Recommended Upload Speed")}</Table.Td>
+            <Table.Td>{t("5 Mbps per viewer")}</Table.Td>
             <Table.Td>5 Mbps</Table.Td>
           </Table.Tr>
           <Table.Tr>
@@ -72,7 +77,7 @@ export const ScreenShareModal = ({
                   closeModal();
                 }}
               >
-                Start Screenshare
+                {t("Start Screenshare")}
               </Button>
             </Table.Td>
             <Table.Td>
@@ -84,7 +89,7 @@ export const ScreenShareModal = ({
                     closeModal();
                   }}
                 >
-                  Start Screenshare w/Relay
+                  {t("Start Screenshare w/Relay")}
                 </Button>
               ) : (
                 subscribeButton

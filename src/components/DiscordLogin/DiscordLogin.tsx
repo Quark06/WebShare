@@ -2,13 +2,15 @@ import { useEffect } from "react";
 import { Alert, Button, Loader, Title } from "@mantine/core";
 import { IconBrandDiscordFilled } from "@tabler/icons-react";
 import { serverPath } from "../../utils/utils";
+import { msg, t } from "../../i18n";
+import { LanguageSwitch } from "../LanguageSwitch/LanguageSwitch";
 
 // Set after a successful login so an expired session logs in again without a click
 export const discordLoginKey = "webshare-discord-login";
 
 const errors: StringDict = {
-  not_in_guild: "This Discord account isn't a member of the required server.",
-  failed: "Discord login failed. Please try again.",
+  not_in_guild: msg("This Discord account isn't a member of the required server."),
+  failed: msg("Discord login failed. Please try again."),
 };
 
 const pageStyle = {
@@ -52,19 +54,23 @@ export const DiscordLogin = () => {
     return (
       <div style={pageStyle}>
         <Loader />
-        <div>Logging in with Discord. . .</div>
+        <div>{t("Logging in with Discord. . .")}</div>
       </div>
     );
   }
   const error = errorCode ? errors[errorCode] : undefined;
   return (
     <div style={pageStyle}>
+      {/* The top bar isn't shown here, so offer the language choice on the page */}
+      <div style={{ position: "absolute", top: 12, right: 12 }}>
+        <LanguageSwitch />
+      </div>
       <img src="/logo.svg" alt="WebShare" width={96} height={96} />
-      <Title order={2}>Log in to WebShare</Title>
-      <div>Members of the required Discord server can log in to continue.</div>
+      <Title order={2}>{t("Log in to WebShare")}</Title>
+      <div>{t("Members of the required Discord server can log in to continue.")}</div>
       {error && (
         <Alert color="red" variant="light">
-          {error}
+          {t(error)}
         </Alert>
       )}
       <Button
@@ -74,7 +80,7 @@ export const DiscordLogin = () => {
         color="#5865F2"
         leftSection={<IconBrandDiscordFilled />}
       >
-        Log in with Discord
+        {t("Log in with Discord")}
       </Button>
     </div>
   );

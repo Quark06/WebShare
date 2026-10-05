@@ -2,6 +2,7 @@ import React, { useContext, useState } from "react";
 import { Modal, Loader, Menu, Text, Checkbox } from "@mantine/core";
 import { IconFile } from "@tabler/icons-react";
 import { MetadataContext } from "../../MetadataContext";
+import { t } from "../../i18n";
 
 export const MultiStreamModal = ({
   streams,
@@ -17,14 +18,19 @@ export const MultiStreamModal = ({
   const context = useContext(MetadataContext);
   const [convert, setConvert] = useState(false);
   return (
-    <Modal opened onClose={resetMultiSelect} centered title="Select a file">
+    <Modal
+      opened
+      onClose={resetMultiSelect}
+      centered
+      title={t("Select a file")}
+    >
       {streams.length === 0 ? (
         <Loader />
       ) : (
         <>
           <Checkbox
             disabled={!context.isSubscriber}
-            label="Convert media (use if no video or audio)"
+            label={t("Convert media (use if no video or audio)")}
             checked={convert}
             onChange={(e) => setConvert(e.target.checked)}
           />
@@ -42,7 +48,9 @@ export const MultiStreamModal = ({
                 }}
               >
                 {file.name}
-                <Text size="sm">{file.length.toLocaleString()} bytes</Text>
+                <Text size="sm">
+                  {t("{count} bytes", { count: file.length.toLocaleString() })}
+                </Text>
               </Menu.Item>
             ))}
           </Menu>

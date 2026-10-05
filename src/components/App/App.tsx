@@ -55,6 +55,7 @@ import { YouTube } from "./YouTube";
 import styles from "./App.module.css";
 import config from "../../config";
 import { MetadataContext } from "../../MetadataContext";
+import { msg, t } from "../../i18n";
 import ChatVideoCard from "../ChatVideoCard/ChatVideoCard";
 import { ActionIcon, Badge, TextInput, Button } from "@mantine/core";
 import {
@@ -327,12 +328,12 @@ export class App extends React.Component<AppProps, AppState> {
         serverPath + "/resolveRoom/" + this.props.vanity,
       );
       if (!resp.ok) {
-        this.setState({ overlayMsg: "Couldn't load this room." });
+        this.setState({ overlayMsg: msg("Couldn't load this room.") });
         return;
       }
       const data = await resp.json();
       if (!data?.roomId) {
-        this.setState({ overlayMsg: "Couldn't load this room." });
+        this.setState({ overlayMsg: msg("Couldn't load this room.") });
         return;
       }
       roomId = data.roomId;
@@ -386,16 +387,17 @@ export class App extends React.Component<AppProps, AppState> {
     socket.on("connect_error", (err: any) => {
       console.error(err);
       if (err.message === "Invalid namespace") {
-        this.setState({ overlayMsg: "Couldn't load this room." });
+        this.setState({ overlayMsg: msg("Couldn't load this room.") });
       } else if (err.message === "password") {
         this.setState({ isErrorAuth: true });
       } else if (err.message === "discord_auth") {
         this.setState({
-          overlayMsg:
+          overlayMsg: msg(
             "Your Discord login has expired. Refresh the page to log in again.",
+          ),
         });
       } else {
-        this.setState({ overlayMsg: err?.message ?? "An error occurred" });
+        this.setState({ overlayMsg: err?.message ?? msg("An error occurred") });
       }
     });
     socket.on("disconnect", (reason) => {
@@ -405,11 +407,11 @@ export class App extends React.Component<AppProps, AppState> {
       }
       if (reason === "io server disconnect") {
         // the disconnection was initiated by the server, you need to reconnect manually
-        this.setState({ overlayMsg: "Disconnected from server." });
+        this.setState({ overlayMsg: msg("Disconnected from server.") });
       } else {
         // else the socket will automatically try to reconnect
         // Use the alert pill since it's less disruptive
-        this.setState({ warningMessage: "Reconnecting..." });
+        this.setState({ warningMessage: msg("Reconnecting...") });
       }
     });
     socket.on("errorMessage", (err: string) => {
@@ -435,7 +437,7 @@ export class App extends React.Component<AppProps, AppState> {
       this.setState({
         roomDeleted: true,
         isDeleteRoomOpen: false,
-        overlayMsg: "This room was deleted.",
+        overlayMsg: msg("This room was deleted."),
       });
     });
     socket.on("REC:play", () => {
@@ -576,7 +578,9 @@ export class App extends React.Component<AppProps, AppState> {
               const source = await response.json();
               if (loadRevision !== this.mediaLoadRevision) return;
               if (!response.ok) {
-                throw new Error(source.error || "Media resolution failed.");
+                throw new Error(
+                  source.error || msg("Media resolution failed."),
+                );
               }
               if (isMusic(currentMedia))
                 this.setState({ musicTrack: { ...source, url: currentMedia } });
@@ -593,7 +597,7 @@ export class App extends React.Component<AppProps, AppState> {
                 errorMessage:
                   error instanceof Error
                     ? error.message
-                    : "Media resolution failed.",
+                    : msg("Media resolution failed."),
               });
               return;
             }
@@ -2044,19 +2048,24 @@ export class App extends React.Component<AppProps, AppState> {
     }
     if (input.startsWith("screenshare://")) {
       const sharer = this.state.participants.find((user) => user.isScreenShare);
-      return this.state.nameMap[sharer?.id ?? ""] + "'s screen";
+      return t("{name}'s screen", {
+        name: this.state.nameMap[sharer?.id ?? ""],
+      });
     }
     if (input.startsWith("fileshare://")) {
       const sharer = this.state.participants.find((user) => user.isScreenShare);
-      return this.state.nameMap[sharer?.id ?? ""] + "'s file";
+      return t("{name}'s file", { name: this.state.nameMap[sharer?.id ?? ""] });
     }
     if (input.startsWith("vbrowser://")) {
-      return "Virtual Browser" + (this.state.isVBrowserLarge ? "+" : "");
+      return t("Virtual Browser") + (this.state.isVBrowserLarge ? "+" : "");
     }
     if (isMagnet(input)) {
       const magnetParsed = new URLSearchParams(input);
       const index = magnetParsed.get("fileIndex");
-      return magnetParsed.get("dn") + (index != null ? ` (file ${index})` : "");
+      return (
+        magnetParsed.get("dn") +
+        (index != null ? " " + t("(file {index})", { index }) : "")
+      );
     }
     if (input.includes("/stream?torrent=magnet")) {
       const search = new URL(input).search;
@@ -2066,7 +2075,7 @@ export class App extends React.Component<AppProps, AppState> {
       const index = searchParsed.get("fileIndex");
       return (
         (magnetParsed.get("dn") ?? searchParsed.get("dn")) +
-        (index != null ? ` (file ${index})` : "")
+        (index != null ? " " + t("(file {index})", { index }) : "")
       );
     }
     if (input.includes("/proxy")) {
@@ -2204,10 +2213,12 @@ export class App extends React.Component<AppProps, AppState> {
         )}
         {this.state.state === "starting" && (
           <Overlay className={styles.flexCenter}>
-            <Title order={2}>Loading...</Title>
+            <Title order={2}>{t("Loading...")}</Title>
           </Overlay>
         )}
-        {this.state.overlayMsg && <ErrorModal error={this.state.overlayMsg} />}
+        {this.state.overlayMsg && (
+          <ErrorModal error={t(this.state.overlayMsg)} />
+        )}
         {this.state.isErrorAuth && <PasswordModal roomId={this.state.roomId} />}
         {this.state.isDeleteRoomOpen && (
           <DeleteRoomModal
@@ -2246,7 +2257,7 @@ export class App extends React.Component<AppProps, AppState> {
         />
         {this.state.errorMessage && (
           <Alert
-            title="Error"
+            title={t("Error")}
             color="red"
             style={{
               position: "fixed",
@@ -2255,12 +2266,12 @@ export class App extends React.Component<AppProps, AppState> {
               zIndex: 1000,
             }}
           >
-            {this.state.errorMessage}
+            {t(this.state.errorMessage)}
           </Alert>
         )}
         {this.state.successMessage && (
           <Alert
-            title="Success"
+            title={t("Success")}
             color="green"
             style={{
               position: "fixed",
@@ -2269,7 +2280,7 @@ export class App extends React.Component<AppProps, AppState> {
               zIndex: 1000,
             }}
           >
-            {this.state.successMessage}
+            {t(this.state.successMessage)}
           </Alert>
         )}
         {this.state.warningMessage && (
@@ -2284,7 +2295,7 @@ export class App extends React.Component<AppProps, AppState> {
               zIndex: 1000,
             }}
           >
-            {this.state.warningMessage}
+            {t(this.state.warningMessage)}
           </Alert>
         )}
         {!this.state.fullScreen && (
@@ -2337,7 +2348,7 @@ export class App extends React.Component<AppProps, AppState> {
                           onClick={this.stopPublishingLocalStream}
                           leftSection={<IconX />}
                         >
-                          Stop Share
+                          {t("Stop Share")}
                         </Button>
                       )}
                       {!this.localStreamToPublish &&
@@ -2354,7 +2365,7 @@ export class App extends React.Component<AppProps, AppState> {
                             }}
                             leftSection={<IconScreenShare />}
                           >
-                            Screenshare
+                            {t("Screenshare")}
                           </Button>
                         )}
                       {!this.localStreamToPublish &&
@@ -2371,7 +2382,7 @@ export class App extends React.Component<AppProps, AppState> {
                             }}
                             leftSection={<IconBrowser />}
                           >
-                            VBrowser
+                            {t("VBrowser")}
                           </Button>
                         )}
                       {this.playingVBrowser() && (
@@ -2382,12 +2393,12 @@ export class App extends React.Component<AppProps, AppState> {
                             onClick={this.stopVBrowser}
                             leftSection={<IconX />}
                           >
-                            Stop VBrowser
+                            {t("Stop VBrowser")}
                           </Button>
                           <Select
                             leftSection={<IconKeyboardFilled />}
                             value={this.state.controller}
-                            placeholder="No controller"
+                            placeholder={t("No controller")}
                             clearable
                             onChange={this.changeController}
                             disabled={!this.haveLock()}
@@ -2407,7 +2418,7 @@ export class App extends React.Component<AppProps, AppState> {
                             }
                             data={[
                               {
-                                label: "1080p (Plus only)",
+                                label: t("1080p (Plus only)"),
                                 value: "1920x1080@30",
                                 disabled: !this.state.isVBrowserLarge,
                               },
@@ -2440,23 +2451,23 @@ export class App extends React.Component<AppProps, AppState> {
                             }}
                             data={[
                               {
-                                label: "Eco (0.25x)",
+                                label: t("Eco (0.25x)"),
                                 value: "0.25",
                               },
                               {
-                                label: "Low (0.5x)",
+                                label: t("Low (0.5x)"),
                                 value: "0.5",
                               },
                               {
-                                label: "Standard (1x)",
+                                label: t("Standard (1x)"),
                                 value: "1",
                               },
                               {
-                                label: "High (1.5x)",
+                                label: t("High (1.5x)"),
                                 value: "1.5",
                               },
                               {
-                                label: "Ultra (2x)",
+                                label: t("Ultra (2x)"),
                                 value: "2",
                               },
                             ]}
@@ -2477,7 +2488,7 @@ export class App extends React.Component<AppProps, AppState> {
                             }}
                             leftSection={<IconFile />}
                           >
-                            File
+                            {t("File")}
                           </Button>
                         )}
                       {this.state.uploadController && (
@@ -2488,7 +2499,7 @@ export class App extends React.Component<AppProps, AppState> {
                           }}
                           leftSection={<IconX />}
                         >
-                          Stop Convert
+                          {t("Stop Convert")}
                         </Button>
                       )}
                       {false && (
@@ -2521,7 +2532,7 @@ export class App extends React.Component<AppProps, AppState> {
                             }
                             className={styles.shareButton}
                           >
-                            Playlist
+                            {t("Playlist")}
                           </Button>
                         </Menu.Target>
                         <Menu.Dropdown
@@ -2538,12 +2549,12 @@ export class App extends React.Component<AppProps, AppState> {
                             disabled={!this.haveLock() || playlist.length === 0}
                             onClick={this.roomPlaylistClear}
                           >
-                            一键清空
+                            {t("Clear all")}
                           </Menu.Item>
                           <Menu.Divider />
                           {playlist.length === 0 && (
                             <Menu.Item disabled>
-                              There are no items in the playlist.
+                              {t("There are no items in the playlist.")}
                             </Menu.Item>
                           )}
                           {playlist.map(
@@ -2581,7 +2592,7 @@ export class App extends React.Component<AppProps, AppState> {
                           leftSection={<IconTrash />}
                           className={styles.shareButton}
                         >
-                          Delete Room
+                          {t("Delete Room")}
                         </Button>
                       )}
                     </div>
@@ -2600,7 +2611,7 @@ export class App extends React.Component<AppProps, AppState> {
                           leftSection={<IconVolume />}
                           size="xl"
                         >
-                          Unmute
+                          {t("Unmute")}
                         </Button>
                       </Overlay>
                     )}
@@ -2622,11 +2633,13 @@ export class App extends React.Component<AppProps, AppState> {
                               <Loader />
                               <div>
                                 {isMusic(this.state.roomMedia)
-                                  ? "Resolving music…"
+                                  ? t("Resolving music…")
                                   : isBilibili(this.state.roomMedia)
-                                    ? "Resolving Bilibili video…"
+                                    ? t("Resolving Bilibili video…")
                                     : this.playingVBrowser()
-                                      ? "Launching virtual browser. This can take up to a minute."
+                                      ? t(
+                                          "Launching virtual browser. This can take up to a minute.",
+                                        )
                                       : ""}
                               </div>
                             </div>
@@ -2634,9 +2647,9 @@ export class App extends React.Component<AppProps, AppState> {
                           {!this.state.loading && !this.state.roomMedia && (
                             <Alert
                               color="yellow"
-                              title="You're not watching anything!"
+                              title={t("You're not watching anything!")}
                             >
-                              Pick something to watch above.
+                              {t("Pick something to watch above.")}
                             </Alert>
                           )}
                           {!this.state.loading &&
@@ -2645,17 +2658,21 @@ export class App extends React.Component<AppProps, AppState> {
                                 color="red"
                                 title={
                                   isMusic(this.state.roomMedia)
-                                    ? "Couldn't play this song"
+                                    ? t("Couldn't play this song")
                                     : isBilibili(this.state.roomMedia)
-                                      ? "Couldn't play this Bilibili video"
-                                      : "It doesn't look like this is a media file!"
+                                      ? t("Couldn't play this Bilibili video")
+                                      : t(
+                                          "It doesn't look like this is a media file!",
+                                        )
                                 }
                               >
                                 {isBilibili(this.state.roomMedia) ||
                                 isMusic(this.state.roomMedia)
-                                  ? this.state.errorMessage ||
-                                    "The media source could not be loaded."
-                                  : "Maybe you meant to launch a VBrowser if you're trying to visit a web page?"}
+                                  ? t(this.state.errorMessage) ||
+                                    t("The media source could not be loaded.")
+                                  : t(
+                                      "Maybe you meant to launch a VBrowser if you're trying to visit a web page?",
+                                    )}
                               </Alert>
                             )}
                         </div>
@@ -2673,7 +2690,7 @@ export class App extends React.Component<AppProps, AppState> {
                               <img
                                 className={styles.musicCover}
                                 src={this.state.musicTrack.img}
-                                alt="Album cover"
+                                alt={t("Album cover")}
                               />
                             ) : (
                               <IconMusic size={100} />
@@ -2683,7 +2700,7 @@ export class App extends React.Component<AppProps, AppState> {
                             </Title>
                             <div>{this.state.musicTrack.channel}</div>
                             {this.state.musicPreview && (
-                              <Badge color="yellow">Preview only</Badge>
+                              <Badge color="yellow">{t("Preview only")}</Badge>
                             )}
                           </div>
                           <MusicLyrics
@@ -2759,8 +2776,12 @@ export class App extends React.Component<AppProps, AppState> {
                               loading: false,
                               nonPlayableMedia: true,
                               errorMessage: isMusic(this.state.roomMedia)
-                                ? "Couldn't load this song directly. The source may have expired or require request headers that your browser cannot send."
-                                : "Couldn't load this Bilibili video. Please check the video availability or try again later.",
+                                ? msg(
+                                    "Couldn't load this song directly. The source may have expired or require request headers that your browser cannot send.",
+                                  )
+                                : msg(
+                                    "Couldn't load this Bilibili video. Please check the video availability or try again later.",
+                                  ),
                             });
                           }
                         }}
@@ -2781,15 +2802,14 @@ export class App extends React.Component<AppProps, AppState> {
                           zIndex: 1,
                         }}
                       >
-                        {Math.min(
-                          (this.state.downloaded / this.state.total) * 100,
-                          100,
-                        ).toFixed(2) +
-                          "% - " +
-                          formatSpeed(this.state.speed) +
-                          " - " +
-                          this.state.connections +
-                          " connections"}
+                        {t("{percent}% - {speed} - {count} connections", {
+                          percent: Math.min(
+                            (this.state.downloaded / this.state.total) * 100,
+                            100,
+                          ).toFixed(2),
+                          speed: formatSpeed(this.state.speed),
+                          count: this.state.connections,
+                        })}
                       </div>
                     )}
                   </div>
@@ -2860,7 +2880,7 @@ export class App extends React.Component<AppProps, AppState> {
                         this.updateName(await generateName())
                       }
                     >
-                      Random
+                      {t("Random")}
                     </Button>
                   }
                 />
@@ -2880,18 +2900,18 @@ export class App extends React.Component<AppProps, AppState> {
                     <Badge circle>{this.state.participants.length}</Badge>
                   }
                 >
-                  People
+                  {t("People")}
                 </Button>
                 <Button
                   color="grey"
-                  title="Settings"
+                  title={t("Settings")}
                   fullWidth
                   onClick={() => {
                     this.setSettingsModalOpen(true);
                   }}
                   leftSection={<IconSettings />}
                 >
-                  Settings
+                  {t("Settings")}
                 </Button>
               </div>
               {this.state.state === "connected" && (

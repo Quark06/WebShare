@@ -6,6 +6,7 @@ import { serverPath } from "../../utils/utils";
 import { ManageSubButton } from "../SubscribeButton/SubscribeButton";
 import config from "../../config";
 import { MetadataContext } from "../../MetadataContext";
+import { t } from "../../i18n";
 import {
   IconBrandDiscordFilled,
   IconBrandGravatar,
@@ -124,15 +125,17 @@ export class ProfileModal extends React.Component<{
           onClose={() => {
             this.setState({ deleteConfirmOpen: false });
           }}
-          title="Delete Your Account"
+          title={t("Delete Your Account")}
         >
           <p>
-            Are you sure you want to delete your account? This can't be undone.
+            {t(
+              "Are you sure you want to delete your account? This can't be undone.",
+            )}
           </p>
           <p>
-            Note: If you have an active subscription, deleting your account will
-            NOT automatically cancel it. Manage your subscription before deleting
-            your account.
+            {t(
+              "Note: If you have an active subscription, deleting your account will NOT automatically cancel it. Manage your subscription before deleting your account.",
+            )}
           </p>
           <div style={{ display: "flex", gap: "4px" }}>
             <Button
@@ -140,14 +143,14 @@ export class ProfileModal extends React.Component<{
                 await this.deleteAccount();
               }}
             >
-              Yes
+              {t("Yes")}
             </Button>
             <Button
               onClick={() => {
                 this.setState({ deleteConfirmOpen: false });
               }}
             >
-              No
+              {t("No")}
             </Button>
           </div>
         </Modal>
@@ -163,7 +166,7 @@ export class ProfileModal extends React.Component<{
           {this.context.user?.email}
           {this.context.user?.emailVerified && (
             <IconCircleCheckFilled
-              title="This email is verified"
+              title={t("This email is verified")}
               color="green"
             />
           )}
@@ -183,7 +186,7 @@ export class ProfileModal extends React.Component<{
             target="_blank"
             color="blue"
           >
-            Edit Gravatar
+            {t("Edit Gravatar")}
           </Button>
           <Button
             disabled={
@@ -193,7 +196,7 @@ export class ProfileModal extends React.Component<{
             color="purple"
             onClick={this.verifyEmail}
           >
-            Verify Email
+            {t("Verify Email")}
           </Button>
           {this.context.isSubscriber && this.context.subscriptionsEnabled && <ManageSubButton />}
           {config.VITE_DISCORD_CLIENT_ID && (this.state.linkedDiscord ? (
@@ -202,15 +205,17 @@ export class ProfileModal extends React.Component<{
               color="red"
               onClick={this.deleteDiscord}
             >
-              Unlink Discord {this.state.linkedDiscord.accountname}#
-              {this.state.linkedDiscord.discriminator}
+              {t("Unlink Discord {account}", {
+                account: `${this.state.linkedDiscord.accountname}#${this.state.linkedDiscord.discriminator ?? ""}`,
+              })}
             </Button>
           ) : (
             <HoverCard>
               <HoverCard.Dropdown>
                 <Text>
-                  Link your Discord account to automatically receive your
-                  Subscriber role if you're subscribed
+                  {t(
+                    "Link your Discord account to automatically receive your Subscriber role if you're subscribed",
+                  )}
                 </Text>
               </HoverCard.Dropdown>
               <HoverCard.Target>
@@ -219,7 +224,7 @@ export class ProfileModal extends React.Component<{
                   color="orange"
                   onClick={this.authDiscord}
                 >
-                  Link Discord Account
+                  {t("Link Discord Account")}
                 </Button>
               </HoverCard.Target>
             </HoverCard>
@@ -230,17 +235,17 @@ export class ProfileModal extends React.Component<{
             color="green"
             onClick={this.resetPassword}
           >
-            Reset Password
+            {t("Reset Password")}
           </Button>
           <Button
             leftSection={<IconTrashFilled />}
             color="red"
             onClick={this.deleteAccountConfirm}
           >
-            Delete Account
+            {t("Delete Account")}
           </Button>
           <Button leftSection={<IconLogout />} onClick={this.onSignOut}>
-            Sign out
+            {t("Sign out")}
           </Button>
         </div>
       </Modal>

@@ -14,6 +14,7 @@ import {
 } from "../../utils/utils";
 import { isMusic } from "../../utils/music";
 import styles from "./RoomListModal.module.css";
+import { msg, t } from "../../i18n";
 
 // Rooms only know the title of media chosen from search or the playlist; label the rest by its link
 function mediaCard(room: RoomListItem): PlaylistVideo | undefined {
@@ -21,11 +22,11 @@ function mediaCard(room: RoomListItem): PlaylistVideo | undefined {
   if (room.media) return room.media;
   if (!url) return;
   const share = isScreenShare(url)
-    ? "Screen share"
+    ? t("Screen share")
     : isFileShare(url)
-      ? "Shared file"
+      ? t("Shared file")
       : isVBrowser(url)
-        ? "Virtual browser"
+        ? t("Virtual browser")
         : "";
   if (share) return { url, name: share, channel: "", duration: 0, type: "share" };
   const type = isYouTube(url)
@@ -38,17 +39,17 @@ function mediaCard(room: RoomListItem): PlaylistVideo | undefined {
           ? "magnet"
           : "file";
   const name = type === "file" ? getFileName(url) || url : url;
-  return { url, name, channel: "Video URL", duration: 0, type };
+  return { url, name, channel: t("Video URL"), duration: 0, type };
 }
 
 function lastActive(room: RoomListItem) {
-  if (room.users) return "Active now";
+  if (room.users) return t("Active now");
   const minutes = Math.floor((Date.now() - Date.parse(room.lastActive)) / 60000);
-  if (minutes < 1) return "Active just now";
-  if (minutes < 60) return `Active ${minutes} min ago`;
+  if (minutes < 1) return t("Active just now");
+  if (minutes < 60) return t("Active {minutes} min ago", { minutes });
   const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `Active ${hours} h ago`;
-  return `Active ${Math.floor(hours / 24)} d ago`;
+  if (hours < 24) return t("Active {hours} h ago", { hours });
+  return t("Active {days} d ago", { days: Math.floor(hours / 24) });
 }
 
 export const RoomListModal = ({
@@ -72,7 +73,9 @@ export const RoomListModal = ({
         setArchiveHours(data.archiveHours);
       } catch (e) {
         setError(
-          e instanceof Error && e.message ? e.message : "Couldn't load rooms.",
+          e instanceof Error && e.message
+            ? e.message
+            : msg("Couldn't load rooms."),
         );
       }
     }
@@ -80,10 +83,10 @@ export const RoomListModal = ({
   }, []);
 
   return (
-    <Modal opened centered size="lg" onClose={onClose} title="Join a room">
+    <Modal opened centered size="lg" onClose={onClose} title={t("Join a room")}>
       {error && (
         <Alert color="red" variant="light">
-          {error}
+          {t(error)}
         </Alert>
       )}
       {!error && !rooms && (
@@ -92,7 +95,9 @@ export const RoomListModal = ({
         </div>
       )}
       {rooms?.length === 0 && (
-        <Text c="dimmed">No open rooms yet. Create one with New Room.</Text>
+        <Text c="dimmed">
+          {t("No open rooms yet. Create one with New Room.")}
+        </Text>
       )}
       {Boolean(rooms?.length) && (
         <div className={styles.List}>
@@ -106,7 +111,7 @@ export const RoomListModal = ({
                 target={openNewTab ? "_blank" : undefined}
               >
                 <div className={styles.Header}>
-                  {room.locked && <IconLock size={16} title="Password" />}
+                  {room.locked && <IconLock size={16} title={t("Password")} />}
                   <div
                     className={styles.Name}
                     style={{ color: room.titleColor || undefined }}
@@ -134,7 +139,7 @@ export const RoomListModal = ({
                   <ChatVideoCard video={media} index={0} />
                 ) : (
                   <Text size="sm" c="dimmed">
-                    Nothing playing
+                    {t("Nothing playing")}
                   </Text>
                 )}
               </a>
@@ -143,8 +148,10 @@ export const RoomListModal = ({
         </div>
       )}
       <Text size="xs" c="dimmed" style={{ marginTop: 16 }}>
-        Rooms with no visitors for {archiveHours} hours are archived and
-        leave this list.
+        {t(
+          "Rooms with no visitors for {hours} hours are archived and leave this list.",
+          { hours: archiveHours },
+        )}
       </Text>
     </Modal>
   );

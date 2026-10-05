@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { parseLyrics, type LyricLine } from "../../utils/lyrics";
 import { serverPath } from "../../utils/utils";
+import { msg, t } from "../../i18n";
 import styles from "./MusicLyrics.module.css";
 
 export function MusicLyrics({
@@ -14,7 +15,7 @@ export function MusicLyrics({
     lines: [],
     plain: [],
   });
-  const [status, setStatus] = useState("Loading lyrics…");
+  const [status, setStatus] = useState(msg("Loading lyrics…"));
   const [active, setActive] = useState(-1);
   const viewport = useRef<HTMLDivElement>(null);
 
@@ -22,7 +23,7 @@ export function MusicLyrics({
     const controller = new AbortController();
     setLyrics({ lines: [], plain: [] });
     setActive(-1);
-    setStatus("Loading lyrics…");
+    setStatus(msg("Loading lyrics…"));
     void (async () => {
       try {
         const response = await fetch(
@@ -35,10 +36,13 @@ export function MusicLyrics({
         if (controller.signal.aborted) return;
         setLyrics(parsed);
         setStatus(
-          parsed.lines.length || parsed.plain.length ? "" : "No lyrics available",
+          parsed.lines.length || parsed.plain.length
+            ? ""
+            : msg("No lyrics available"),
         );
       } catch {
-        if (!controller.signal.aborted) setStatus("Lyrics are unavailable");
+        if (!controller.signal.aborted)
+          setStatus(msg("Lyrics are unavailable"));
       }
     })();
     return () => controller.abort();
@@ -73,9 +77,9 @@ export function MusicLyrics({
   }, [active]);
 
   return (
-    <section className={styles.panel} aria-label="Lyrics">
+    <section className={styles.panel} aria-label={t("Lyrics")}>
       {status ? (
-        <div className={styles.status}>{status}</div>
+        <div className={styles.status}>{t(status)}</div>
       ) : (
         <div className={styles.viewport} ref={viewport}>
           {lyrics.lines.length ? (

@@ -2,6 +2,7 @@ import { useContext, useEffect, useState } from "react";
 import firebase from "firebase/compat/app";
 import { serverPath } from "../../utils/utils";
 import { MetadataContext } from "../../MetadataContext";
+import { t } from "../../i18n";
 
 export const Discord = () => {
   const [errorMsg, setErrorMsg] = useState("");
@@ -41,7 +42,7 @@ export const Discord = () => {
   }, [user]);
 
   if (errorMsg) {
-    return <div style={{ color: "red", fontSize: 20 }}>{errorMsg}</div>;
+    return <div style={{ color: "red", fontSize: 20 }}>{t(errorMsg)}</div>;
   }
   return null;
 };

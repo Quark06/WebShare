@@ -3,6 +3,7 @@ import { Modal, PasswordInput, ActionIcon } from "@mantine/core";
 import { IconKey } from "@tabler/icons-react";
 import { addAndSavePassword, serverPath } from "../../utils/utils";
 import { MetadataContext } from "../../MetadataContext";
+import { t } from "../../i18n";
 
 export const PasswordModal = ({ roomId }: { roomId: string }) => {
   const setPassword = useCallback(() => {
@@ -40,7 +41,7 @@ export const PasswordModal = ({ roomId }: { roomId: string }) => {
       opened
       centered
       size="md"
-      title="This room requires a password"
+      title={t("This room requires a password")}
     >
       <PasswordInput
         id="roomPassword"

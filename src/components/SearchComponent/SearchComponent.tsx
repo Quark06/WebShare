@@ -10,6 +10,7 @@ import {
   StreamPathSearchResult,
 } from "../SearchResult/SearchResult";
 import { MetadataContext } from "../../MetadataContext";
+import { t } from "../../i18n";
 import { IconBrandYoutubeFilled, IconMovie } from "@tabler/icons-react";
 
 interface SearchComponentProps {
@@ -73,10 +74,10 @@ export class SearchComponent extends React.Component<SearchComponentProps> {
   };
 
   render() {
-    let placeholder = "Search or enter magnet";
+    let placeholder = t("Search or enter magnet");
     let icon = <IconMovie />;
     if (this.props.type === "youtube") {
-      placeholder = "Search YouTube";
+      placeholder = t("Search YouTube");
       icon = <IconBrandYoutubeFilled />;
     }
     const renderOption = ({

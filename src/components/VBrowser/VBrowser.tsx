@@ -7,6 +7,7 @@ import config from "../../config";
 import { VIDEO_MAX_HEIGHT_CSS } from "../../utils/utils";
 import { Button } from "@mantine/core";
 import { IconClipboard, IconKeyboardFilled } from "@tabler/icons-react";
+import { t } from "../../i18n";
 
 export class VBrowser extends React.Component<{
   username: string;
@@ -386,7 +387,7 @@ export class VBrowser extends React.Component<{
               }}
               leftSection={<IconKeyboardFilled />}
             >
-              Open Keyboard
+              {t("Open Keyboard")}
             </Button>
           )}
           {this.props.isMobile && this.props.controlling && (
@@ -400,7 +401,7 @@ export class VBrowser extends React.Component<{
               }}
               leftSection={<IconClipboard />}
             >
-              Paste
+              {t("Paste")}
             </Button>
           )}
         </div>

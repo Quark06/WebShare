@@ -18,6 +18,7 @@ import {
   musicPlatformNames,
   type MusicPlatform,
 } from "../../utils/music";
+import { msg, t } from "../../i18n";
 import ChatVideoCard from "../ChatVideoCard/ChatVideoCard";
 import { IconLink, IconSearch, IconX } from "@tabler/icons-react";
 import {
@@ -84,7 +85,7 @@ export class ComboBox extends React.Component<ComboBoxProps, ComboBoxState> {
         error:
           error instanceof Error
             ? error.message
-            : "Music playlist import failed.",
+            : msg("Music playlist import failed."),
       });
     }
   };
@@ -102,7 +103,9 @@ export class ComboBox extends React.Component<ComboBoxProps, ComboBoxState> {
         items = [
           {
             url: query,
-            name: `Import playlist (${tracks.length} songs)`,
+            name: t("Import playlist ({count} songs)", {
+              count: tracks.length,
+            }),
             type: "music",
             duration: 0,
           },
@@ -156,7 +159,7 @@ export class ComboBox extends React.Component<ComboBoxProps, ComboBoxState> {
       this.setState({
         items: [],
         loading: false,
-        error: error instanceof Error ? error.message : "Search failed.",
+        error: error instanceof Error ? error.message : msg("Search failed."),
       });
     }
   };
@@ -205,17 +208,17 @@ export class ComboBox extends React.Component<ComboBoxProps, ComboBoxState> {
       <div style={{ width: "100%" }}>
         <Group gap="xs" wrap="nowrap">
           <Select
-            aria-label="Search platform"
+            aria-label={t("Search platform")}
             style={{ width: 150, flexShrink: 0 }}
             disabled={this.props.disabled}
             allowDeselect={false}
             value={this.state.platform}
             data={[
               { value: "youtube", label: "YouTube" },
-              { value: "bilibili", label: "Bilibili" },
+              { value: "bilibili", label: t("Bilibili") },
               ...musicPlatforms.map((platform) => ({
                 value: platform,
-                label: musicPlatformNames[platform],
+                label: t(musicPlatformNames[platform]),
               })),
             ]}
             onChange={(value) => {
@@ -319,8 +322,8 @@ export class ComboBox extends React.Component<ComboBoxProps, ComboBoxState> {
               <Group gap={0} wrap="nowrap">
                 {this.usingVideoSearch() && (
                   <ActionIcon
-                    title="Search"
-                    aria-label="Search videos"
+                    title={t("Search")}
+                    aria-label={t("Search videos")}
                     disabled={this.props.disabled || this.state.loading}
                     onMouseDown={(e) => e.preventDefault()}
                     onClick={() => this.doSearch()}
@@ -331,7 +334,7 @@ export class ComboBox extends React.Component<ComboBoxProps, ComboBoxState> {
                 <ActionIcon
                   color="red"
                   onClick={() => this.setMediaAndClose("")}
-                  title="Clear"
+                  title={t("Clear")}
                 >
                   <IconX />
                 </ActionIcon>
@@ -342,10 +345,13 @@ export class ComboBox extends React.Component<ComboBoxProps, ComboBoxState> {
             }
             placeholder={
               this.state.platform === "youtube"
-                ? "Enter a link, or search YouTube with Enter / Search"
+                ? t("Enter a link, or search YouTube with Enter / Search")
                 : this.state.platform === "bilibili"
-                  ? "Enter a link, or search Bilibili with Enter / Search"
-                  : `Search ${musicPlatformNames[this.state.platform]} or enter a music song / playlist link`
+                  ? t("Enter a link, or search Bilibili with Enter / Search")
+                  : t(
+                      "Search {platform} or enter a music song / playlist link",
+                      { platform: t(musicPlatformNames[this.state.platform]) },
+                    )
             }
             value={
               this.state.inputMedia !== undefined
@@ -359,7 +365,7 @@ export class ComboBox extends React.Component<ComboBoxProps, ComboBoxState> {
         </Group>
         {this.state.error && (
           <Alert color="red" mt="xs">
-            {this.state.error}
+            {t(this.state.error)}
           </Alert>
         )}
       </div>
