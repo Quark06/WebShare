@@ -1,9 +1,10 @@
-import React, { useCallback, useContext } from "react";
+import React, { useCallback, useContext, useState } from "react";
 import { serverPath, getUserImage, softWhite } from "../../utils/utils";
 import { ActionIcon, Avatar, Button, Menu, Text } from "@mantine/core";
 import firebase from "firebase/compat/app";
 import "firebase/compat/auth";
 import { LoginModal } from "../Modal/LoginModal";
+import { RoomListModal } from "../Modal/RoomListModal";
 import { SubscribeButton } from "../SubscribeButton/SubscribeButton";
 import { ProfileModal } from "../Modal/ProfileModal";
 import { InviteButton } from "../InviteButton/InviteButton";
@@ -16,6 +17,7 @@ import {
   IconBrandGoogleFilled,
   IconCirclePlusFilled,
   IconDatabase,
+  IconDoorEnter,
   IconLogin,
   IconMailFilled,
   IconTrash,
@@ -65,6 +67,31 @@ export const NewRoomButton = (props: {
     >
       New Room
     </Button>
+  );
+};
+
+export const JoinRoomButton = (props: {
+  size?: string;
+  openNewTab?: boolean;
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  return (
+    <React.Fragment>
+      <Button
+        size={props.size}
+        color="green"
+        onClick={() => setIsOpen(true)}
+        leftSection={<IconDoorEnter />}
+      >
+        Join Room
+      </Button>
+      {isOpen && (
+        <RoomListModal
+          openNewTab={props.openNewTab}
+          onClose={() => setIsOpen(false)}
+        />
+      )}
+    </React.Fragment>
   );
 };
 
@@ -334,6 +361,7 @@ export const TopBar = (props: {
             </ActionIcon>
           </div>
           {!props.hideNewRoom && <NewRoomButton openNewTab />}
+          {!props.hideNewRoom && <JoinRoomButton openNewTab />}
           {!props.hideMyRooms && context.user && <ListRoomsButton />}
           {subscribeButton}
           {!props.hideSignin && <SignInButton />}

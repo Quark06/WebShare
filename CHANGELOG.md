@@ -1,5 +1,8 @@
 ## October 2026 (WebShare)
 
+- Rooms now outlive their visitors: an empty or restarted room stops at its playback position and waits for the next visitor to press play.
+- Added Join Room, a list of joinable rooms with their current media, viewers and last activity; rooms with no visitors for 72 hours are archived, and with PostgreSQL their links still restore them.
+
 - Added an optional site-wide Discord login gate that admits members of configured Discord servers, fills in their server nickname and avatar, and remembers logins for 30 days.
 
 - Added music search and song-link playback for NetEase Music, QQ Music, KuGou and Kuwo through Meting.
