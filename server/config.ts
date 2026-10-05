@@ -74,6 +74,11 @@ const defaults = {
   DISCORD_ADMIN_BOT_TOKEN: "", // Optional, for Discord bot to set subscriber roles
   DISCORD_ADMIN_BOT_SERVER_ID: "", // Optional, your own Discord server ID
   DISCORD_ADMIN_BOT_SUB_ROLE_ID: "", // Optional, your own subscriber role ID
+  DISCORD_AUTH_CLIENT_ID: "", // Optional, Discord OAuth app for the site-wide login gate
+  DISCORD_AUTH_CLIENT_SECRET: "", // Server-only secret of that app; also derives the session signing key
+  DISCORD_AUTH_GUILD_ID: "", // Discord server ID(s) allowed in, comma-separated; the gate is on when ID, secret and guild are set
+  DISCORD_AUTH_REDIRECT_URI: "", // Optional, defaults to <site origin>/auth/discord/callback
+  DISCORD_AUTH_SESSION_DAYS: 30, // Days a login is remembered; renewed while in use
   MEDIASOUP_SERVER: "", // Optional, URL of the MediaSoup server to broadcast to for larger screen/file shares
   TWITCH_PROXY_PATH: "", // Optional, URL of the server that can proxy twitch HLS stream playlists and segments
   VBROWSER_ADMIN_KEY: "", // Optional, the key to hit admin endpoints on the vbrowser

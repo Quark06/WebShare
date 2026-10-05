@@ -1,6 +1,10 @@
 import config from "./config.ts";
 import fs from "node:fs";
-import express, { type Response } from "express";
+import express, {
+  type NextFunction,
+  type Request,
+  type Response,
+} from "express";
 import bodyParser from "body-parser";
 import compression from "compression";
 import cors from "cors";
@@ -36,6 +40,18 @@ import { gzipSync } from "node:zlib";
 import { resolveShard } from "./utils/resolveShard.ts";
 import { makeRoomName, makeUserName } from "./utils/moniker.ts";
 import { getStats } from "./utils/getStats.ts";
+import {
+  clearStateCookie,
+  completeDiscordLogin,
+  discordAuthorizeUrl,
+  discordRedirectUri,
+  isDiscordAuthEnabled,
+  readDiscordSession,
+  readDiscordState,
+  safeReturnTo,
+  sessionCookie,
+  stateCookie,
+} from "./utils/discordAuth.ts";
 
 if (process.env.NODE_ENV === "development") {
   axios.interceptors.request.use(
@@ -121,8 +137,89 @@ app.get("/ping", (_req, res) => {
   res.json("pong");
 });
 
+// Discord login gate: routes after requireDiscordSession need a session when it's configured
+function discordRedirect(req: Request) {
+  const protocol = String(req.headers["x-forwarded-proto"] || req.protocol)
+    .split(",")[0]
+    .trim();
+  return discordRedirectUri(protocol, req.get("host") ?? "");
+}
+
+function requireDiscordSession(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
+  if (!isDiscordAuthEnabled() || readDiscordSession(req.headers.cookie)) {
+    next();
+  } else if (req.method === "GET" && req.headers.accept?.includes("text/html")) {
+    // Page navigations get the app, which shows the login screen
+    sendIndex(res);
+  } else {
+    res.status(401).json({ error: "Discord login required." });
+  }
+}
+
+app.get("/auth/discord/login", (req, res) => {
+  if (!isDiscordAuthEnabled()) {
+    res.redirect("/");
+    return;
+  }
+  const redirectUri = discordRedirect(req);
+  const state = crypto.randomBytes(16).toString("hex");
+  res.setHeader(
+    "Set-Cookie",
+    stateCookie(
+      state,
+      safeReturnTo(req.query.returnTo),
+      redirectUri.startsWith("https:"),
+    ),
+  );
+  res.redirect(discordAuthorizeUrl(state, redirectUri));
+});
+
+app.get("/auth/discord/callback", async (req, res) => {
+  const redirectUri = discordRedirect(req);
+  const secure = redirectUri.startsWith("https:");
+  const saved = readDiscordState(req.headers.cookie);
+  try {
+    if (
+      !isDiscordAuthEnabled() ||
+      !saved ||
+      typeof req.query.code !== "string" ||
+      req.query.state !== saved.state
+    ) {
+      throw new Error("The Discord login request is missing or expired.");
+    }
+    const user = await completeDiscordLogin(req.query.code, redirectUri);
+    res.setHeader("Set-Cookie", [
+      clearStateCookie(secure),
+      sessionCookie(user, secure),
+    ]);
+    res.redirect(saved.returnTo);
+  } catch (error) {
+    const reason =
+      error instanceof Error && error.message === "not_in_guild"
+        ? "not_in_guild"
+        : "failed";
+    if (reason === "failed") console.warn("Discord login failed:", error);
+    res.setHeader("Set-Cookie", clearStateCookie(secure));
+    res.redirect("/?discordAuthError=" + reason);
+  }
+});
+
+app.get("/auth/session", (req, res) => {
+  res.setHeader("Cache-Control", "no-store");
+  res.json({
+    enabled: isDiscordAuthEnabled(),
+    user: isDiscordAuthEnabled()
+      ? (readDiscordSession(req.headers.cookie) ?? null)
+      : null,
+  });
+});
+
 // Data's already compressed so go before the compression middleware
-app.get("/subtitle/:hash", async (req, res) => {
+app.get("/subtitle/:hash", requireDiscordSession, async (req, res) => {
   const key = "subtitle:" + req.params.hash;
   const buf = await redis?.getBuffer(key);
   if (!buf) {
@@ -135,6 +232,9 @@ app.get("/subtitle/:hash", async (req, res) => {
 });
 
 app.use(compression());
+// The built app and its assets are public so signed-out visitors can see the login screen
+app.use(express.static(config.BUILD_DIRECTORY));
+app.use(requireDiscordSession);
 
 app.post("/subtitle", async (req, res) => {
   const data = req.body;
@@ -759,15 +859,16 @@ app.get("/proxy/*splat", async (req, res) => {
   }
 });
 
-app.use(express.static(config.BUILD_DIRECTORY));
 // Send index.html for all other requests (SPA)
-app.use("/*splat", (_req, res) => {
+app.use("/*splat", (_req, res) => sendIndex(res));
+
+function sendIndex(res: Response) {
   res.sendFile(
     path.resolve(
       import.meta.dirname + `/../${config.BUILD_DIRECTORY}/index.html`,
     ),
   );
-});
+}
 
 async function saveRooms() {
   // Unload rooms that are empty and idle

@@ -13,6 +13,7 @@
     "dev": "node --watch-path . server/server.ts",
     "build": "npm run buildReact && npm run typecheckServer",
     "test:resolvers": "node scripts/verify-resolvers.mjs",
+    "test:discord-auth": "node scripts/verify-discord-auth.mjs",
     "buildReact": "vite build && npm run typecheck",
     "pm2": "pm2 startOrRestart ecosystem.config.cjs --only webshare --update-env",
     "deploy": "node scripts/deploy.mjs",
