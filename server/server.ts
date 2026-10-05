@@ -302,7 +302,7 @@ app.get("/bilibili", async (req, res) => {
     res.json({
       title: media.title,
       duration: media.duration,
-      resolver: media.isLive ? "stream-get" : "html5",
+      resolver: media.resolver || (media.isLive ? "stream-get" : "html5"),
       quality: media.quality,
       format: media.format || "file",
       isLive: media.isLive || false,

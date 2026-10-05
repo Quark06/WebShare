@@ -1,4 +1,6 @@
 import { extractBilibiliLive } from "./bilibiliLive.ts";
+import config from "../config.ts";
+import { resolveBilibilix } from "./resolvers/bilibilix.ts";
 
 const cache = new Map<
   string,
@@ -12,6 +14,7 @@ export interface BilibiliMedia {
   url: string;
   format?: "hls";
   isLive?: boolean;
+  resolver?: string;
 }
 
 export function normalizeBilibiliUrl(input: string): string {
@@ -77,6 +80,18 @@ async function extract(input: string): Promise<BilibiliMedia> {
     if (!response.ok) throw new Error(`Bilibili short link returned HTTP ${response.status}.`);
     pageUrl = normalizeBilibiliUrl(response.url);
   }
+  const page = new URL(pageUrl);
+  const resolver =
+    page.hostname === "live.bilibili.com"
+      ? config.BILIBILI_LIVE_RESOLVER
+      : config.BILIBILI_RESOLVER;
+  const providers = { local: extractLocal, bilibilix: resolveBilibilix };
+  const provider = providers[resolver as keyof typeof providers];
+  if (!provider) throw new Error(`Unknown Bilibili resolver: ${resolver}.`);
+  return provider(pageUrl);
+}
+
+async function extractLocal(pageUrl: string): Promise<BilibiliMedia> {
   const page = new URL(pageUrl);
   if (page.hostname === "live.bilibili.com") {
     return extractBilibiliLive(pageUrl);

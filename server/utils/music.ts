@@ -1,5 +1,4 @@
-import Meting from "@meting/core";
-import config from "../config.ts";
+import { createMusicClient, type MusicClient } from "./musicClient.ts";
 import {
   getMusicReference,
   musicPlatforms,
@@ -43,17 +42,9 @@ export function parseMusicPlatform(input: unknown): MusicPlatform {
   return input as MusicPlatform;
 }
 
-function client(platform: MusicPlatform) {
-  const meting = new Meting(platform).format(true);
-  const cookie =
-    config[
-      `METING_${platform.toUpperCase()}_COOKIE` as `METING_${Uppercase<MusicPlatform>}_COOKIE`
-    ];
-  if (cookie) meting.cookie(cookie);
-  return meting;
-}
+const client = createMusicClient;
 
-function json(meting: Meting, text: string): any {
+function json(meting: MusicClient, text: string): any {
   if (meting.error)
     throw new Error("The music platform could not be reached. Try again later.");
   if (meting.info?.statusCode !== 200)
@@ -67,7 +58,7 @@ function json(meting: Meting, text: string): any {
   }
 }
 
-function songs(meting: Meting, text: string): MetingSong[] {
+function songs(meting: MusicClient, text: string): MetingSong[] {
   const data = json(meting, text);
   const items = Array.isArray(data)
     ? data.filter((song) => song?.id && song?.name)
@@ -80,7 +71,7 @@ function songs(meting: Meting, text: string): MetingSong[] {
   return items;
 }
 
-function rawSongs(meting: Meting): any[] {
+function rawSongs(meting: MusicClient): any[] {
   try {
     const data = JSON.parse(meting.raw || "{}");
     const candidates = [

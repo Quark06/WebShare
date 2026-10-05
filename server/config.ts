@@ -12,6 +12,13 @@ const defaults = {
   YOUTUBE_API_KEY: "", // Optional, for direct YouTube link metadata and playlist imports
   YOUTUBE_PROXY_URL: "", // Optional, HTTP(S) proxy for YouTube.js search requests
   BILIBILI_COOKIE: "", // Optional, server-only Cookie for Bilibili search/live quality
+  BILIBILI_RESOLVER: "local", // local | bilibilix (ordinary videos)
+  BILIBILI_LIVE_RESOLVER: "local", // local | bilibilix (live rooms)
+  BILIBILIX_URL: "https://www.bilibilix.com", // Replaceable redirect resolver base
+  BILIBILIX_LIVE_URL: "https://live.bilibilix.com",
+  MUSIC_RESOLVER: "local", // local | meting-api
+  METING_API_URL: "https://api.qijieya.cn/meting/", // Replaceable Meting-compatible API
+  METING_API_PLATFORMS: "netease,tencent", // Other platforms keep the local pipeline
   METING_NETEASE_COOKIE: "", // Optional, your own music platform login cookies (server only)
   METING_TENCENT_COOKIE: "",
   METING_KUGOU_COOKIE: "",

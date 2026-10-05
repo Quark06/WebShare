@@ -96,6 +96,30 @@ B 站视频播放无需额外配置。服务器使用 B 站 `platform=html5` 播
 
 匿名播放（Anonymous Playback）可能仅返回试听片段，或不返回播放地址。如有需要，可在服务器 `.env` 中使用 `METING_NETEASE_COOKIE`、`METING_TENCENT_COOKIE`、`METING_KUGOU_COOKIE` 或 `METING_KUWO_COOKIE` 配置自己的平台登录 Cookie，然后重启服务器。Cookie 仅保留在服务器端，不会消除账号或平台的权限限制。对于要求特定媒体请求头（Request Headers）、而浏览器无法发送这些请求头的音源，直接播放仍可能失败。当前 Meting 接入不包含咪咕音乐（Migu）、Spotify、Apple Music 导入或自动跨平台匹配（Cross-Platform Matching）。
 
+### 可选第三方解析（Third-party Resolvers）
+
+默认保留原有链路（Local Pipeline）。在服务器 `.env` 中选择第三方适配器（Adapter），然后重启服务：
+
+```dotenv
+BILIBILI_RESOLVER=bilibilix
+BILIBILI_LIVE_RESOLVER=bilibilix
+BILIBILIX_URL=https://www.bilibilix.com
+BILIBILIX_LIVE_URL=https://live.bilibilix.com
+MUSIC_RESOLVER=meting-api
+METING_API_URL=https://api.qijieya.cn/meting/
+METING_API_PLATFORMS=netease,tencent
+```
+
+视频和直播可分别选择 `local` 或 `bilibilix`；音乐可选择 `local` 或 `meting-api`。设为 `local` 即恢复对应原链路。配置仅作用于服务端（Server-side Configuration），不需要重新构建前端。
+
+[Bilibilix](https://bilibilix.com/) 通过重定向（Redirect）返回 MP4 或 HLS 直链，支持 BV/AV、分 P 和直播。解析不再请求 B 站视频元数据接口（Metadata API）；已有搜索元数据时复用标题和时长，否则显示视频或房间编号，由播放器读取实际时长。B 站搜索仍使用原接口，`b23.tv` 短链接仍先展开为原始页面链接。
+
+[Qijieya Meting API](https://api.qijieya.cn/meting/) 接管已配置平台的搜索、歌曲元数据、歌单、播放地址和歌词，使用标准的 `server/type/id` 参数。该服务文档目前列出网易云（NetEase）和 QQ 音乐（QQ Music），所以默认只将这两个平台交给第三方，酷狗（KuGou）和酷我（Kuwo）保留本地链路。换用支持更多平台的兼容服务时，可修改 `METING_API_URL` 和 `METING_API_PLATFORMS`；网站已公布迁移地址，当前配置仍使用上述指定地址。
+
+同协议服务可以只替换地址；不同协议服务在 `server/utils/resolvers/` 添加适配器，并注册到对应解析选择器（Resolver Selector）。适配器统一返回现有播放器和歌单使用的数据。平台登录凭据（Cookie）仅供原链路使用，不会发送给第三方。第三方失败时显示错误，不自动追加原平台请求；原有缓存（Cache）和并发请求合并（Request Deduplication）继续生效。服务器读取解析结果时不跟随重定向下载媒体，观看者浏览器继续直接播放返回的地址。
+
+离线功能性验证（Offline Functional Verification）可运行 `npm run test:resolvers`，使用本地模拟响应（Fixtures），不会请求公益服务或下载媒体。
+
 ### Firebase 配置（用户身份验证）
 
 默认关闭登录。启用时使用自己的 Firebase 项目；应用不再默认连接上游账号或分析服务（Analytics）。

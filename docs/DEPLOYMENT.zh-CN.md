@@ -67,6 +67,20 @@ YouTube 搜索代理运行在服务器所在的网络环境中；服务器的 `1
 
 如启用 Firebase，需配置自己的 `VITE_FIREBASE_CONFIG`、服务端 `FIREBASE_ADMIN_SDK_CONFIG` 及授权域名（Authorized Domains）。使用涉及跳转的登录或账号关联功能时，也应将 `VITE_OAUTH_REDIRECT_HOSTNAME` 设置为自己的站点来源地址。
 
+可选的第三方解析（Third-party Resolvers）配置如下；不设置时仍使用原有链路（Local Pipeline）。修改后重启服务即可：
+
+```dotenv
+BILIBILI_RESOLVER=bilibilix
+BILIBILI_LIVE_RESOLVER=bilibilix
+BILIBILIX_URL=https://www.bilibilix.com
+BILIBILIX_LIVE_URL=https://live.bilibilix.com
+MUSIC_RESOLVER=meting-api
+METING_API_URL=https://api.qijieya.cn/meting/
+METING_API_PLATFORMS=netease,tencent
+```
+
+视频、直播、音乐可分别将对应选择器（Resolver Selector）改为 `local`，恢复原链路。第三方 Meting 默认只用于网易云（NetEase）和 QQ 音乐（QQ Music）；酷狗（KuGou）和酷我（Kuwo）继续使用本地 Meting。兼容服务更换时修改上述地址和支持的平台列表（Platform List），无需改动播放器。B 站搜索仍由原接口提供。平台登录凭据（Cookie）不会发送给第三方，第三方失败时不自动追加原平台请求。详见 [第三方解析配置](../README.zh-CN.md#可选第三方解析third-party-resolvers)。
+
 ### 2.3 构建和启动
 
 ```bash

@@ -96,6 +96,30 @@ The music stage places the artwork and song information on the left, with scroll
 
 Anonymous playback may return a preview or no URL. If needed, configure your own platform login Cookie in the server `.env` with `METING_NETEASE_COOKIE`, `METING_TENCENT_COOKIE`, `METING_KUGOU_COOKIE`, or `METING_KUWO_COOKIE`, then restart the server. Cookies stay on the server and do not remove account or platform restrictions. Sources requiring media request headers that the browser cannot send may still fail direct playback. Migu, Spotify and Apple Music import and automatic cross-platform matching are not part of this initial Meting integration.
 
+### Optional third-party resolvers
+
+The local pipeline remains the default. Select adapters in the server `.env` and restart:
+
+```dotenv
+BILIBILI_RESOLVER=bilibilix
+BILIBILI_LIVE_RESOLVER=bilibilix
+BILIBILIX_URL=https://www.bilibilix.com
+BILIBILIX_LIVE_URL=https://live.bilibilix.com
+MUSIC_RESOLVER=meting-api
+METING_API_URL=https://api.qijieya.cn/meting/
+METING_API_PLATFORMS=netease,tencent
+```
+
+Video and live resolution independently support `local` or `bilibilix`; music supports `local` or `meting-api`. Set a selector to `local` to restore its original pipeline. These are server settings; no frontend rebuild is needed.
+
+[Bilibilix](https://bilibilix.com/) redirects BV/AV videos, explicit parts and live rooms to MP4/HLS sources. This adapter does not request Bilibili video metadata. It reuses cached search metadata when available, otherwise labels the video/room by its ID and leaves duration to the player. Bilibili search remains local, and `b23.tv` links are still expanded first.
+
+[Qijieya's Meting API](https://api.qijieya.cn/meting/) handles search, song metadata, playlists, playback URLs and lyrics for the selected platforms using `server/type/id`. Its documentation currently lists NetEase and QQ Music, so KuGou and Kuwo retain the local pipeline by default. Replace `METING_API_URL` and adjust `METING_API_PLATFORMS` for another compatible service. Qijieya has announced a migration; the example deliberately uses the requested existing endpoint.
+
+Services using the same protocol can be replaced through configuration. For a different protocol, add an adapter under `server/utils/resolvers/` and register it in the relevant selector. Adapters return the existing player/playlist data format. Platform Cookies are used only by the local pipeline and are not sent to third parties. Resolver failures surface without additional automatic requests to the original platform. Existing caches and concurrent request sharing remain in place. The server reads media redirects without following them into the media; browsers continue playing the returned addresses directly.
+
+Run `npm run test:resolvers` for offline functional checks with local fixtures; the script does not contact public services or download media.
+
 ### Firebase Config (user authentication)
 
 Login is disabled by default. Use your own Firebase project; no upstream account or analytics service is configured.
