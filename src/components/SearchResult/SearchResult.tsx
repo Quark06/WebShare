@@ -2,6 +2,7 @@ import React from "react";
 import { Button, Text } from "@mantine/core";
 import { decodeEntities, formatSize } from "../../utils/utils";
 import { IconBrandYoutubeFilled } from "@tabler/icons-react";
+import { t } from "../../i18n";
 
 export const YouTubeSearchResult = (
   props: SearchResult & {
@@ -29,7 +30,7 @@ export const YouTubeSearchResult = (
               props.playlistAdd(result.url);
             }}
           >
-            Add To Playlist
+            {t("Add To Playlist")}
           </Button>
         </div>
       </div>
@@ -77,10 +78,13 @@ export const StreamPathSearchResult = (
       >
         <Text>{result.name}</Text>
         <Text size="xs">
-          {typeof result.size === "number"
-            ? formatSize(result.size)
-            : result.size}
-          , {result.seeders} seeds
+          {t("{size}, {seeders} seeds", {
+            size:
+              typeof result.size === "number"
+                ? formatSize(result.size)
+                : (result.size ?? ""),
+            seeders: result.seeders ?? "",
+          })}
         </Text>
       </div>
     </div>

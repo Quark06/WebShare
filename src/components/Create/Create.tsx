@@ -2,6 +2,7 @@ import React, { useContext, useRef } from "react";
 import { createRoom } from "../TopBar/TopBar";
 import { Loader } from "@mantine/core";
 import { MetadataContext } from "../../MetadataContext";
+import { t } from "../../i18n";
 
 export const Create = () => {
   const { user } = useContext(MetadataContext);
@@ -21,7 +22,7 @@ export const Create = () => {
       }}
     >
       <Loader></Loader>
-      <div>Creating room. . .</div>
+      <div>{t("Creating room. . .")}</div>
       <button
         style={{ display: "none" }}
         ref={buttonEl}

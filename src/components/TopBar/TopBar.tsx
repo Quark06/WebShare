@@ -13,6 +13,7 @@ import { RoomListModal } from "../Modal/RoomListModal";
 import { SubscribeButton } from "../SubscribeButton/SubscribeButton";
 import { ProfileModal } from "../Modal/ProfileModal";
 import { InviteButton } from "../InviteButton/InviteButton";
+import { LanguageSwitch } from "../LanguageSwitch/LanguageSwitch";
 import appStyles from "../App/App.module.css";
 import { MetadataContext } from "../../MetadataContext";
 import config from "../../config";
@@ -28,6 +29,7 @@ import {
   IconTrash,
 } from "@tabler/icons-react";
 import styles from "./TopBar.module.css";
+import { t } from "../../i18n";
 
 export async function createRoom(
   user: firebase.User | undefined,
@@ -71,7 +73,7 @@ export const NewRoomButton = (props: {
       onClick={onClick}
       leftSection={<IconCirclePlusFilled />}
     >
-      New Room
+      {t("New Room")}
     </Button>
   );
 };
@@ -89,7 +91,7 @@ export const JoinRoomButton = (props: {
         onClick={() => setIsOpen(true)}
         leftSection={<IconDoorEnter />}
       >
-        Join Room
+        {t("Join Room")}
       </Button>
       {isOpen && (
         <RoomListModal
@@ -153,7 +155,7 @@ export class SignInButton extends React.Component<SignInButtonProps> {
           leftSection={<IconLogin />}
           onClick={() => this.setState({ isLoginOpen: true })}
         >
-          Sign in
+          {t("Sign in")}
         </Button>
       </React.Fragment>
     );
@@ -203,12 +205,12 @@ export class ListRoomsButton extends React.Component<{}> {
             onClick={this.refreshRooms}
             leftSection={<IconDatabase />}
           >
-            My rooms
+            {t("My rooms")}
           </Button>
         </Menu.Target>
         <Menu.Dropdown>
           {this.state.rooms.length === 0 && (
-            <Menu.Item disabled>You have no permanent rooms.</Menu.Item>
+            <Menu.Item disabled>{t("You have no permanent rooms.")}</Menu.Item>
           )}
           {this.state.rooms.map((room: any) => {
             return (
@@ -365,6 +367,7 @@ export const TopBar = (props: {
             >
               <IconBrandGithub />
             </ActionIcon>
+            <LanguageSwitch />
           </div>
           {!props.hideNewRoom && <NewRoomButton openNewTab />}
           {!props.hideNewRoom && <JoinRoomButton openNewTab />}

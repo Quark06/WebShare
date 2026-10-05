@@ -1,6 +1,7 @@
 import React from "react";
 import { ActionIcon } from "@mantine/core";
 import { decodeEntities, formatTimestamp } from "../../utils/utils";
+import { t } from "../../i18n";
 
 import classes from "./ChatVideoCard.module.css";
 import {
@@ -115,7 +116,7 @@ const ChatVideoCard: React.FC<{
         {onPlaylistAdd && (
           <div className={classes.Controls}>
             <ActionIcon
-              title="Add to Playlist"
+              title={t("Add to Playlist")}
               onClick={(e) => {
                 e.stopPropagation();
                 e.nativeEvent.stopImmediatePropagation();
@@ -130,7 +131,7 @@ const ChatVideoCard: React.FC<{
           <div className={classes.Controls}>
             <ActionIcon
               color="green"
-              title="Play now"
+              title={t("Play now")}
               onClick={handlePlayClick}
               disabled={disabled}
             >
@@ -138,7 +139,7 @@ const ChatVideoCard: React.FC<{
             </ActionIcon>
             <ActionIcon
               color="black"
-              title="Play next"
+              title={t("Play next")}
               onClick={handlePlayNextClick}
               disabled={disabled}
             >
@@ -146,7 +147,7 @@ const ChatVideoCard: React.FC<{
             </ActionIcon>
             <ActionIcon
               color="red"
-              title="Remove"
+              title={t("Remove")}
               onClick={handleRemoveClick}
               disabled={disabled}
             >

@@ -20,6 +20,7 @@ import {
   discordLoginKey,
 } from "./components/DiscordLogin/DiscordLogin";
 import config from "./config";
+import { getLanguage, onLanguageChange } from "./i18n";
 import { DEFAULT_STATE, MetadataContext } from "./MetadataContext";
 import { createTheme, MantineProvider } from "@mantine/core";
 
@@ -39,8 +40,11 @@ class WebShare extends React.Component {
   public state = {
     ...DEFAULT_STATE,
     discordGate: "loading" as "loading" | "ok" | "required",
+    // Re-rendering from the root updates every t() call after a language switch
+    language: getLanguage(),
   };
   async componentDidMount() {
+    onLanguageChange(() => this.setState({ language: getLanguage() }));
     this.loadDiscordSession();
     if (firebaseConfig) {
       firebase.auth().onAuthStateChanged(async (user: firebase.User | null) => {

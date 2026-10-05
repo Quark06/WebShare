@@ -22,6 +22,7 @@ WebShare is a self-hosted website for synchronized video watching, Bilibili live
 - Create separate rooms for users on demand
 - Text chat
 - Video chat
+- English and Simplified Chinese interface
 
 ## Quick Start
 
@@ -179,6 +180,12 @@ The room owner can delete the room with **Delete Room** in the room toolbar, aft
 The optional `server/cleanup.ts` maintenance script only removes rooms that never saved any state, so archived rooms stay restorable.
 
 Run `npm run test:rooms` to check persistence and the room list against a real server. It runs in memory by default. Setting `TEST_DATABASE_URL` to an empty, disposable PostgreSQL database adds the database checks; the script creates the schema there and drops it afterwards.
+
+## Interface language
+
+The interface is available in English and Simplified Chinese. Switch with the language button next to the GitHub icon in the top bar, or in the corner of the Discord login page; switching inside a room keeps you connected. The browser remembers the choice (`webshare-language` in local storage). Without a saved choice, browsers set to Chinese start in Chinese and others in English.
+
+The English text is the translation key: wrap new interface text in `t()` from `src/i18n` (or mark constants with `msg()`), and add the Chinese in `src/i18n/zh.ts`. Missing translations fall back to English. Known server error messages are translated as well; messages with changing details, such as HTTP status codes, stay in English. `npm run test:i18n` reports texts without a translation, mismatched `{placeholders}` and unused entries.
 
 ## Tech
 

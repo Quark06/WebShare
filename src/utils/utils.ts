@@ -6,6 +6,7 @@ import config from "../config";
 import { cyrb53 } from "./hash";
 import React from "react";
 import { getMusicReference, type MusicPlatform } from "./music";
+import { msg, t } from "../i18n";
 
 export function formatTimestamp(input: any, zeroTime?: number): string {
   if (
@@ -255,7 +256,7 @@ export async function getYouTubeResults(
     serverPath + "/youtube?q=" + encodeURIComponent(query),
   );
   const data = await response.json();
-  if (!response.ok) throw new Error(data.error || "YouTube search failed.");
+  if (!response.ok) throw new Error(t(data.error || msg("YouTube search failed.")));
   return data.map((d: any) => ({ ...d, type: "youtube" }));
 }
 
@@ -266,14 +267,14 @@ export async function getBilibiliResults(
     serverPath + "/bilibili/search?q=" + encodeURIComponent(query),
   );
   const data = await response.json();
-  if (!response.ok) throw new Error(data.error || "Bilibili search failed.");
+  if (!response.ok) throw new Error(t(data.error || msg("Bilibili search failed.")));
   return data;
 }
 
 async function musicResults(path: string): Promise<SearchResult[]> {
   const response = await fetch(serverPath + path);
   const data = await response.json();
-  if (!response.ok) throw new Error(data.error || "Music search failed.");
+  if (!response.ok) throw new Error(t(data.error || msg("Music search failed.")));
   return data;
 }
 

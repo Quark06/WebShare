@@ -1,6 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { softWhite } from "../../utils/utils";
+import { t } from "../../i18n";
 
 export const Footer = () => (
   <div
@@ -11,10 +12,10 @@ export const Footer = () => (
       color: softWhite,
     }}
   >
-    <Link to="/terms">Usage</Link>
+    <Link to="/terms">{t("Usage")}</Link>
     {" · "}
-    <Link to="/privacy">Privacy</Link>
+    <Link to="/privacy">{t("Privacy")}</Link>
     {" · "}
-    <Link to="/faq">FAQ</Link>
+    <Link to="/faq">{t("FAQ")}</Link>
   </div>
 );

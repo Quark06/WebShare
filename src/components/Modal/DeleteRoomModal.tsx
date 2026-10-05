@@ -1,5 +1,6 @@
 import { Button, Modal, Text } from "@mantine/core";
 import { IconTrash } from "@tabler/icons-react";
+import { t } from "../../i18n";
 
 export const DeleteRoomModal = ({
   onConfirm,
@@ -9,10 +10,11 @@ export const DeleteRoomModal = ({
   onClose: () => void;
 }) => {
   return (
-    <Modal opened centered onClose={onClose} title="Delete this room?">
+    <Modal opened centered onClose={onClose} title={t("Delete this room?")}>
       <Text size="sm">
-        Everyone in the room will be disconnected, and its playlist, chat and
-        playback progress will be deleted. This can't be undone.
+        {t(
+          "Everyone in the room will be disconnected, and its playlist, chat and playback progress will be deleted. This can't be undone.",
+        )}
       </Text>
       <div
         style={{
@@ -23,10 +25,10 @@ export const DeleteRoomModal = ({
         }}
       >
         <Button variant="default" onClick={onClose}>
-          Cancel
+          {t("Cancel")}
         </Button>
         <Button color="red" leftSection={<IconTrash />} onClick={onConfirm}>
-          Delete Room
+          {t("Delete Room")}
         </Button>
       </div>
     </Modal>

@@ -5,6 +5,7 @@ import config from "../../config";
 import { MetadataContext } from "../../MetadataContext";
 import { IconBrandStripeFilled, IconCheck } from "@tabler/icons-react";
 import { serverPath } from "../../utils/utils";
+import { t } from "../../i18n";
 
 export class SubscribeModal extends React.Component<{
   closeSubscribe: () => void;
@@ -46,18 +47,19 @@ export class SubscribeModal extends React.Component<{
         onClose={closeSubscribe}
         centered
         size="auto"
-        title="Subscribe to WebShare Plus"
+        title={t("Subscribe to WebShare Plus")}
       >
         <div>
-          Subscriptions help us maintain the service and build new features!
-          Please consider supporting us if you're enjoying WebShare.
+          {t(
+            "Subscriptions help us maintain the service and build new features! Please consider supporting us if you're enjoying WebShare.",
+          )}
         </div>
-        <Title order={6}>Features</Title>
+        <Title order={6}>{t("Features")}</Title>
         <Table striped>
           <Table.Thead>
             <Table.Tr>
               <Table.Th />
-              <Table.Th>WebShare Free</Table.Th>
+              <Table.Th>{t("WebShare Free")}</Table.Th>
               <Table.Th>WebShare Plus</Table.Th>
             </Table.Tr>
           </Table.Thead>
@@ -65,7 +67,9 @@ export class SubscribeModal extends React.Component<{
           <Table.Tbody>
             {/* Priority support */}
             <Table.Tr>
-              <Table.Td>Synchronized watching, chat, screenshare</Table.Td>
+              <Table.Td>
+                {t("Synchronized watching, chat, screenshare")}
+              </Table.Td>
               <Table.Td>
                 <IconCheck />
               </Table.Td>
@@ -74,9 +78,9 @@ export class SubscribeModal extends React.Component<{
               </Table.Td>
             </Table.Tr>
             <Table.Tr>
-              <Table.Td>Number of Permanent Rooms</Table.Td>
-              <Table.Td>Server configured</Table.Td>
-              <Table.Td>Server configured</Table.Td>
+              <Table.Td>{t("Number of Permanent Rooms")}</Table.Td>
+              <Table.Td>{t("Server configured")}</Table.Td>
+              <Table.Td>{t("Server configured")}</Table.Td>
             </Table.Tr>
             {/* <Table.Tr>
                   <Table.Td>Max Room Capacity</Table.Td>
@@ -84,27 +88,27 @@ export class SubscribeModal extends React.Component<{
                   <Table.Td>100</Table.Td>
                 </Table.Tr> */}
             <Table.Tr>
-              <Table.Td>VBrowser Access</Table.Td>
-              <Table.Td>When capacity allows</Table.Td>
-              <Table.Td>Anytime</Table.Td>
+              <Table.Td>{t("VBrowser Access")}</Table.Td>
+              <Table.Td>{t("When capacity allows")}</Table.Td>
+              <Table.Td>{t("Anytime")}</Table.Td>
             </Table.Tr>
             <Table.Tr>
-              <Table.Td>VBrowser Max Resolution</Table.Td>
+              <Table.Td>{t("VBrowser Max Resolution")}</Table.Td>
               <Table.Td>720p</Table.Td>
               <Table.Td>1080p</Table.Td>
             </Table.Tr>
             <Table.Tr>
-              <Table.Td>VBrowser CPU/RAM</Table.Td>
-              <Table.Td>Standard</Table.Td>
-              <Table.Td>Extra</Table.Td>
+              <Table.Td>{t("VBrowser CPU/RAM")}</Table.Td>
+              <Table.Td>{t("Standard")}</Table.Td>
+              <Table.Td>{t("Extra")}</Table.Td>
             </Table.Tr>
             <Table.Tr>
-              <Table.Td>VBrowser Session Length</Table.Td>
-              <Table.Td>Server configured</Table.Td>
-              <Table.Td>Server configured</Table.Td>
+              <Table.Td>{t("VBrowser Session Length")}</Table.Td>
+              <Table.Td>{t("Server configured")}</Table.Td>
+              <Table.Td>{t("Server configured")}</Table.Td>
             </Table.Tr>
             <Table.Tr>
-              <Table.Td>VBrowser Region Selection</Table.Td>
+              <Table.Td>{t("VBrowser Region Selection")}</Table.Td>
               <Table.Td></Table.Td>
               <Table.Td>
                 <IconCheck />
@@ -112,7 +116,7 @@ export class SubscribeModal extends React.Component<{
             </Table.Tr>
             <Table.Tr>
               <Table.Td>
-                Share your screen/file to more viewers with Relay
+                {t("Share your screen/file to more viewers with Relay")}
               </Table.Td>
               <Table.Td></Table.Td>
               <Table.Td>
@@ -120,30 +124,32 @@ export class SubscribeModal extends React.Component<{
               </Table.Td>
             </Table.Tr>
             <Table.Tr>
-              <Table.Td>Custom room URLs and titles</Table.Td>
+              <Table.Td>{t("Custom room URLs and titles")}</Table.Td>
               <Table.Td></Table.Td>
               <Table.Td>
                 <IconCheck />
               </Table.Td>
             </Table.Tr>
             <Table.Tr>
-              <Table.Td>Discord subscriber role (with linked account)</Table.Td>
+              <Table.Td>
+                {t("Discord subscriber role (with linked account)")}
+              </Table.Td>
               <Table.Td></Table.Td>
               <Table.Td>
                 <IconCheck />
               </Table.Td>
             </Table.Tr>
             <Table.Tr>
-              <Table.Td>Colored names in chat</Table.Td>
+              <Table.Td>{t("Colored names in chat")}</Table.Td>
               <Table.Td></Table.Td>
               <Table.Td>
                 <IconCheck />
               </Table.Td>
             </Table.Tr>
             <Table.Tr>
-              <Table.Td>Price</Table.Td>
-              <Table.Td>$0 / month</Table.Td>
-              <Table.Td>See checkout</Table.Td>
+              <Table.Td>{t("Price")}</Table.Td>
+              <Table.Td>{t("$0 / month")}</Table.Td>
+              <Table.Td>{t("See checkout")}</Table.Td>
             </Table.Tr>
           </Table.Tbody>
         </Table>
@@ -154,11 +160,11 @@ export class SubscribeModal extends React.Component<{
               leftSection={<IconBrandStripeFilled />}
               onClick={this.onSubscribe}
             >
-              Subscribe with Stripe
+              {t("Subscribe with Stripe")}
             </Button>
           ) : (
             <div>
-              Please sign in to subscribe: <SignInButton />
+              {t("Please sign in to subscribe:")} <SignInButton />
             </div>
           )}
         </div>
