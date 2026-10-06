@@ -1,8 +1,8 @@
-# 部署
+# Deployment
 
-需要 Node.js 24+、npm 和 Git。以下命令在 Linux 上执行，PM2 和 Docker 两种部署方式任选其一。
+Requires Node.js 24+, npm and Git. Run the following commands on Linux. Choose either PM2 or Docker.
 
-## PM2 部署
+## PM2 deployment
 
 ```bash
 git clone https://github.com/Quark06/WebShare.git
@@ -11,21 +11,21 @@ cp .env.example .env
 npm ci --include=dev
 ```
 
-编辑 `.env`。通过 Nginx 访问时设置：
+Edit `.env`. When using Nginx, set:
 
 ```dotenv
 HOST=127.0.0.1
 PORT=8080
 ```
 
-构建并启动：
+Build and start:
 
 ```bash
 npm run build
 npm run pm2
 ```
 
-访问 `http://127.0.0.1:8080`。查看状态和日志（Logs）、停止服务：
+Open `http://127.0.0.1:8080`. Check status, view logs or stop the service:
 
 ```bash
 npm exec -- pm2 status
@@ -33,24 +33,24 @@ npm exec -- pm2 logs webshare --lines 50
 npm exec -- pm2 stop webshare
 ```
 
-开机自启：
+Start on boot:
 
 ```bash
 npm exec -- pm2 startup
-# 执行上一步提示的 sudo 命令，再保存：
+# Run the sudo command printed above, then save:
 npm exec -- pm2 save
 ```
 
-## 域名与 HTTPS
+## Domain and HTTPS
 
-将域名解析（DNS）到服务器，并放行 80、443 端口。Ubuntu / Debian 安装 Nginx：
+Point your domain's DNS records to the server and allow ports 80 and 443. Install Nginx on Ubuntu / Debian:
 
 ```bash
 sudo apt update
 sudo apt install -y nginx
 ```
 
-创建 `/etc/nginx/sites-available/webshare`，替换示例域名：
+Create `/etc/nginx/sites-available/webshare`, replacing the example domain:
 
 ```nginx
 map $http_upgrade $webshare_connection_upgrade {
@@ -76,24 +76,24 @@ server {
 }
 ```
 
-启用配置：
+Enable the configuration:
 
 ```bash
 sudo ln -s /etc/nginx/sites-available/webshare /etc/nginx/sites-enabled/webshare
 sudo nginx -t && sudo systemctl reload nginx
 ```
 
-按 [Certbot 安装说明](https://certbot.eff.org/instructions) 安装后，申请 HTTPS 证书（Certificate）：
+Install Certbot using its [installation guide](https://certbot.eff.org/instructions), then request an HTTPS certificate:
 
 ```bash
 sudo certbot --nginx -d watch.example.com
 ```
 
-摄像头和屏幕共享（Screen Sharing）需要通过 HTTPS 使用。
+Camera access and screen sharing require HTTPS.
 
-## Docker 部署
+## Docker deployment
 
-安装 [Docker Engine](https://docs.docker.com/engine/install/)，获取代码并复制 `.env.example` 为 `.env` 后，在项目目录运行：
+Install [Docker Engine](https://docs.docker.com/engine/install/), clone the repository and copy `.env.example` to `.env`. Run from the project directory:
 
 ```bash
 docker build -t webshare:local .
@@ -107,17 +107,17 @@ docker run -d \
   webshare:local
 ```
 
-复用上面的 Nginx 配置。`VITE_` 配置需在构建时传入，例如 `docker build --build-arg VITE_DISCORD_CLIENT_ID=你的ID -t webshare:local .`。
+Use the Nginx configuration above. Pass `VITE_` settings at build time, for example: `docker build --build-arg VITE_DISCORD_CLIENT_ID=YOUR_CLIENT_ID -t webshare:local .`.
 
-## 更新
+## Updates
 
-PM2 部署在干净的 `master` 分支上执行：
+For PM2 deployments, run on a clean `master` branch:
 
 ```bash
 npm run deploy
 ```
 
-Docker 部署：
+For Docker deployments:
 
 ```bash
 git pull --ff-only origin master
@@ -126,4 +126,4 @@ docker stop webshare
 docker rm webshare
 ```
 
-随后重新执行上面的 `docker run`。使用过 `--build-arg` 时，更新也需传入相同参数。未配置数据库的房间会在重启后丢失。
+Run the `docker run` command above again. Include the same `--build-arg` values when rebuilding. Without a database, rooms are lost on restart.
