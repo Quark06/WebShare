@@ -2,213 +2,29 @@
 
 [English](README.md) | [简体中文](README.zh-CN.md)
 
-WebShare 是可自行部署的同步观影、B 站直播、音乐与聊天网站。
+可自行部署（Self-hosted）的同步观影、听歌与聊天网站。
 
-## 功能介绍
+## 功能（Features）
 
-- 同步当前房间内正在观看的视频。
-- 所有观看者的播放、暂停和跳转进度（Seek）操作保持同步（Synchronization）。
-- 支持以下媒体来源和共享方式：
-  - 屏幕共享（Screen Sharing）和共享虚拟浏览器（Virtual Browser）正在重做，目前点击按钮只会显示“建设中”提示。
-  - 共享并播放自己的本地文件（Stream Your Own File）。
-  - 互联网上可通过 HTTP 访问的视频文件。
-  - YouTube 视频。
-  - B 站（Bilibili）视频搜索与链接，通过 HTML5 单文件 MP4 直接播放。
-  - B 站直播间链接，通过 `@bililive-tools/stream-get` 获取 HLS/AVC 直播流并直接播放。
-  - 网易云音乐（NetEase）、QQ 音乐（QQ Music）、酷狗音乐（KuGou）和酷我音乐（Kuwo）的歌曲与歌单链接，通过 Meting 接入。
-  - 磁力链接（Magnet Link），通过 WebTorrent 播放。
-  - `.m3u8` 流媒体，使用 HTTP 实时流传输（HTTP Live Streaming，HLS）。
-- 按需创建独立房间。
-- 文字聊天（Text Chat）。
-- 视频聊天（Video Chat）。
-- 英文和简体中文界面。
+- 同步播放（Synchronized Playback）B 站（Bilibili）、YouTube 和国内音乐。
+- 本地文件共享（File Sharing）、文字与视频聊天。
+- 房间列表、密码保护与可选持久化（Persistence）。
+- 中英双语，可选 Discord 登录与第三方解析（Third-party Resolver）。
 
-## 快速开始
+## 部署（Deployment）
 
-- 使用 Node.js 24 或更新版本。
-- 执行 `git clone git@github.com:Quark06/WebShare.git` 克隆仓库（Repository），然后进入 `WebShare` 目录。
-- 将 `.env.example` 复制为 `.env`，根据下方的进阶配置说明，填写所需功能的配置项。
-- 执行 `npm ci --include=dev` 安装项目依赖（Dependencies）。
-- 执行 `npm run dev` 启动服务器。
-  - 默认端口（Port）为 8080，可通过环境变量（Environment Variable）`PORT` 修改。
-  - 如需 HTTPS，设置 `SSL_KEY_FILE` 和 `SSL_CRT_FILE`。
-- 在另一个终端（Shell）中执行 `npm run ui`，使用独立端口启动 React 前端应用。
-  - 如果修改了服务器地址或端口，通过 `VITE_SERVER_HOST` 指定服务器地址。
-  - 如需 HTTPS，设置 `SSL_KEY_FILE` 和 `SSL_CRT_FILE`。
-  - 浏览器的部分 WebRTC 功能（例如摄像头）要求使用 HTTPS。
+需要 **Node.js 24+**、npm 和 Git。
 
-生产构建（Production Build）使用 `npm run build`。随后设置 `NODE_ENV=production` 并执行 `npm start` 启动服务器。同一服务器会提供构建后的前端页面和接口（API），默认使用 8080 端口。
-
-## 服务器部署
-
-请参阅[服务器部署指南](docs/DEPLOYMENT.zh-CN.md)，包含 Linux 单进程 PM2 部署、Nginx/HTTPS、Docker、更新流程、运行配置说明和功能验收（Functional Testing）。
-
-常驻运行使用 `npm run pm2`；已部署服务器的更新使用 `npm run deploy`。该更新流程要求位于干净的 `master` 分支，完成依赖安装、构建（Build）和类型检查（Type Checking）后，只重启 `webshare` 应用。
-
-## 进阶配置（可选）
-
-以下配置均为可选项。不配置时应用也应能够运行，但部分功能可能不可用。
-
-### YouTube 视频搜索
-
-视频搜索在服务器端使用 [YouTube.js](https://github.com/LuanRT/YouTube.js)（`youtubei.js`），不需要 Google API 密钥（API Key）或登录 YouTube。
-
-在房间的搜索平台选择器中选择 **YouTube**，输入关键词后按回车或点击 **Search**。选择结果即可播放，也可点击 **Add to Playlist** 加入播放队列（Playlist）。视频搜索仅在提交时执行；无论选择哪个搜索平台，仍可直接粘贴媒体链接。搜索最多返回首页的 25 个普通视频，包含标题、封面、作者和时长。相同搜索共享 5 分钟的缓存（Cache）；搜索失败缓存 30 秒，并在搜索框中显示错误。将最近搜索过的视频加入队列时，会复用搜索结果中的元数据（Metadata），不需要 API 密钥。
-
-服务器必须能够访问 YouTube。YouTube.js 使用 YouTube 内部接口（Internal API），接口可能发生变更或拒绝请求。搜索成功不代表视频一定允许嵌入播放（Embedded Playback）。每位观看者仍通过现有的 YouTube 嵌入式框架（iframe）使用自己的网络播放视频。
-
-配置代理（Proxy）后，YouTube 搜索请求会使用 HTTP(S) 代理。选择优先级依次为：服务器环境中的 `YOUTUBE_PROXY_URL`、`HTTPS_PROXY` / `HTTP_PROXY`（也支持小写形式及 `NO_PROXY`），最后是已启用的 Windows 手动系统代理。例如，在服务器 `.env` 中设置 `YOUTUBE_PROXY_URL=http://127.0.0.1:10808`，然后重启服务器。Windows 下会自动检测已启用的系统代理，因此搜索不要求开启 TUN 模式（TUN Mode）。每个服务器进程（Process）仅在启动时读取一次代理选择，修改代理设置后需重启。没有配置代理时，请求直接连接。
-
-### 可选的 YouTube Data API
-
-`YOUTUBE_API_KEY` 仍是可选项，用于添加尚未搜索过的 YouTube 链接时获取元数据，以及导入 YouTube 播放列表。在 [Google Cloud](https://console.cloud.google.com/) 中启用 **YouTube Data API v3** 并创建 API 密钥，将其填入服务器 `.env` 的 `YOUTUBE_API_KEY`，然后重启服务器。即使配置了此密钥，关键词搜索也始终使用 YouTube.js。
-
-### B 站视频
-
-在现有房间输入框中粘贴普通 B 站视频链接，例如 `bilibili.com/video/BV...`、`av...` 或 `b23.tv` 短链接（Short Link）。通过显式添加 `?p=2` 选择对应分 P；目前没有自动连续播放多分 P 的功能。房间和播放队列保留原始链接。
-
-B 站视频播放无需额外配置。服务器使用 B 站 `platform=html5` 播放接口获取视频元数据和单文件 MP4，接口调用方式参考 [BiliAnalysis](https://github.com/mmyo456/BiliAnalysis)。浏览器使用现有的视频元素（Video Element）直接从 B 站播放文件，视频流量不经过 WebShare。实际画质（Quality）取决于视频及接口响应，B 站仍可能拒绝接口请求。
-
-在房间的搜索平台选择器中选择 **Bilibili**，输入关键词后按回车或点击 **Search**。服务器使用 [biliAPI](https://github.com/renmu123/biliAPI)（`@renmu/bili-api`）获取首页普通视频搜索结果，包含标题、封面、作者和时长。选择结果即可播放，或点击 **Add to Playlist** 加入队列。搜索结果保留视频页面链接，仅在播放视频时解析播放地址。搜索结果缓存 5 分钟，同时发起的相同搜索共享一次请求；搜索失败缓存 30 秒。
-
-默认使用匿名搜索（Anonymous Search）。如果 B 站拒绝搜索，可以在服务器 `.env` 中配置自己的登录凭据（Cookie）`BILIBILI_COOKIE`，然后重启服务器。Cookie 用于搜索和直播画质请求，仅保留在服务器端。服务器必须能够访问 B 站接口，每位观看者仍直接从 B 站加载视频。搜索可用不代表视频一定具有可播放的单文件 MP4 地址。
-
-在同一输入框中粘贴直播间链接，例如 `https://live.bilibili.com/123`，即可观看当前直播。服务器通过 [biliLive-tools](https://github.com/renmu123/biliLive-tools/tree/master/packages/StreamGet)（`@bililive-tools/stream-get`）将直播间短号解析为真实房间编号（Room ID），并获取直播流。服务器会选择 HLS/AVC，优先使用 TS 流，交给现有 HLS 播放器（Player）播放；其中 AVC 指高级视频编码（Advanced Video Coding），TS 指传输流（Transport Stream）。接口返回实际直播流画质。未开播或不可用的房间会显示错误，目前不包含直播搜索。可选的 `BILIBILI_COOKIE` 可以用于获取更高的直播画质，实际可用画质受平台和账号权限影响。
-
-成功的视频播放解析共享并缓存 5 分钟，直播间解析缓存 1 分钟；解析失败缓存 30 秒，以减少重复请求。也支持通过 `b23.tv` 解析直播短链接。房间和队列保留原始直播间链接，让新加入的观看者获得当前播放地址。直播播放复用现有的直播边缘（Live Edge）控制功能。WebShare 不下载、合并、转码（Transcoding）或代理媒体。浏览器直接播放仍取决于内容分发网络（Content Delivery Network，CDN）的跨域资源共享（Cross-Origin Resource Sharing，CORS）策略，以及观看者能否访问该媒体源。
-
-### 音乐（Meting）
-
-音乐功能在现有服务器中使用 Node.js 库 [Meting](https://github.com/metowolf/Meting)，无需单独的解析服务（Resolver Service）。使用房间输入框旁的搜索平台选择器，搜索网易云音乐、QQ 音乐、酷狗音乐或酷我音乐；选择结果即可播放，也可以通过现有的 **Add to Playlist** 按钮加入队列。默认搜索平台仍是 YouTube。
-
-也可以直接粘贴标准歌曲链接：
-
-- 网易云音乐（NetEase）：`https://music.163.com/song?id=...`，包括 `#/song?id=...` 形式的链接。
-- QQ 音乐（QQ Music）：`https://y.qq.com/n/ryqq/songDetail/...` 或 `https://y.qq.com/n/yqq/song/....html`。
-- 酷狗音乐（KuGou）：`https://www.kugou.com/song/#hash=...`。
-- 酷我音乐（Kuwo）：`https://www.kuwo.cn/play_detail/...`。
-
-这些平台的标准歌单链接也受支持：网易云音乐 `/playlist?id=...`、QQ 音乐 `/n/ryqq/playlist/...`、酷狗音乐 `/yy/special/single/....html`，以及酷我音乐 `/playlist_detail/...`。粘贴歌单链接即可浏览歌曲；按回车将返回的歌曲加入房间队列，或选择单首歌曲播放。加入歌单时，房间现有媒体会继续播放。歌单大小和可用性取决于平台响应，目前不包含私有歌单或平台分享短链接解析。
-
-房间保留歌曲链接，并在播放时按需解析当前歌曲；平台提供对应音源时，使用 128 kbps 的码率（Bitrate）。浏览器直接从平台 CDN 播放音频，WebShare 仅处理接口请求，不代理或下载音频。搜索、歌曲和歌单元数据均有缓存，同时发起的相同解析共享一次请求链（Request Chain）；解析失败缓存 30 秒。音乐界面显示歌曲和歌手信息，并在平台提供时展示封面。当可播放音频明显短于歌曲元数据中的时长时，会显示 **Preview only**（仅试听）标签。
-
-音乐界面左侧展示封面和歌曲信息，右侧展示滚动歌词。带时间戳（Timestamp）的 LRC 歌词跟随本地实际播放进度，当前歌词行会高亮并居中；平台提供翻译时也会展示译文。纯文本歌词仍可手动滚动。歌词通过 Meting 独立于音频加载，并缓存 30 分钟；歌词不可用不影响播放。
-
-匿名播放（Anonymous Playback）可能仅返回试听片段，或不返回播放地址。如有需要，可在服务器 `.env` 中使用 `METING_NETEASE_COOKIE`、`METING_TENCENT_COOKIE`、`METING_KUGOU_COOKIE` 或 `METING_KUWO_COOKIE` 配置自己的平台登录 Cookie，然后重启服务器。Cookie 仅保留在服务器端，不会消除账号或平台的权限限制。对于要求特定媒体请求头（Request Headers）、而浏览器无法发送这些请求头的音源，直接播放仍可能失败。当前 Meting 接入不包含咪咕音乐（Migu）、Spotify、Apple Music 导入或自动跨平台匹配（Cross-Platform Matching）。
-
-### 可选第三方解析（Third-party Resolvers）
-
-默认保留原有链路（Local Pipeline）。在服务器 `.env` 中选择第三方适配器（Adapter），然后重启服务：
-
-```dotenv
-BILIBILI_RESOLVER=bilibilix
-BILIBILI_LIVE_RESOLVER=bilibilix
-BILIBILIX_URL=https://www.bilibilix.com
-BILIBILIX_LIVE_URL=https://live.bilibilix.com
-MUSIC_RESOLVER=meting-api
-METING_API_URL=https://api.qijieya.cn/meting/
-METING_API_PLATFORMS=netease,tencent
+```bash
+git clone https://github.com/Quark06/WebShare.git
+cd WebShare
+cp .env.example .env
+# 按需编辑 .env
+npm ci --include=dev
+npm run build
+npm run pm2
 ```
 
-视频和直播可分别选择 `local` 或 `bilibilix`；音乐可选择 `local` 或 `meting-api`。设为 `local` 即恢复对应原链路。配置仅作用于服务端（Server-side Configuration），不需要重新构建前端。
+打开 [http://localhost:8080](http://localhost:8080)。可选功能见[配置说明（Configuration）](docs/CONFIGURATION.zh-CN.md)，Linux / Docker 部署见[部署指南（Deployment Guide）](docs/DEPLOYMENT.zh-CN.md)。
 
-[Bilibilix](https://bilibilix.com/) 通过重定向（Redirect）返回 MP4 或 HLS 直链，支持 BV/AV、分 P 和直播。解析不再请求 B 站视频元数据接口（Metadata API）；已有搜索元数据时复用标题和时长，否则显示视频或房间编号，由播放器读取实际时长。B 站搜索仍使用原接口，`b23.tv` 短链接仍先展开为原始页面链接。
-
-[Qijieya Meting API](https://api.qijieya.cn/meting/) 接管已配置平台的搜索、歌曲元数据、歌单、播放地址和歌词，使用标准的 `server/type/id` 参数。该服务文档目前列出网易云（NetEase）和 QQ 音乐（QQ Music），所以默认只将这两个平台交给第三方，酷狗（KuGou）和酷我（Kuwo）保留本地链路。换用支持更多平台的兼容服务时，可修改 `METING_API_URL` 和 `METING_API_PLATFORMS`；网站已公布迁移地址，当前配置仍使用上述指定地址。
-
-同协议服务可以只替换地址；不同协议服务在 `server/utils/resolvers/` 添加适配器，并注册到对应解析选择器（Resolver Selector）。适配器统一返回现有播放器和歌单使用的数据。平台登录凭据（Cookie）仅供原链路使用，不会发送给第三方。第三方失败时显示错误，不自动追加原平台请求；原有缓存（Cache）和并发请求合并（Request Deduplication）继续生效。服务器读取解析结果时不跟随重定向下载媒体，观看者浏览器继续直接播放返回的地址。
-
-离线功能性验证（Offline Functional Verification）可运行 `npm run test:resolvers`，使用本地模拟响应（Fixtures），不会请求公益服务或下载媒体。
-
-### Discord 登录拦截（Login Gate）
-
-默认关闭。启用后，访问者必须先用 Discord 登录，并且是指定 Discord 服务器（Server）的成员，才能打开页面、调用接口和进入房间。`/ping` 保持开放，用于健康检查（Health Check）。
-
-1. 在 [Discord 开发者门户（Developer Portal）](https://discord.com/developers/applications) 创建应用（Application）。应用的名称和图标会显示在 Discord 授权页上。
-2. 在 **OAuth2** 页面复制 Client ID 和 Client Secret，并在 **Redirects** 中添加 `https://<你的站点>/auth/discord/callback`。
-3. 在 Discord 设置中开启开发者模式（Developer Mode），右键服务器并选择 **复制服务器 ID**（Copy Server ID）。
-4. 将以下配置填入服务器 `.env`，然后重启服务器，无需重新构建前端：
-
-```dotenv
-DISCORD_AUTH_CLIENT_ID=
-DISCORD_AUTH_CLIENT_SECRET=
-DISCORD_AUTH_GUILD_ID=123456789012345678
-```
-
-授权页会申请两项权限：`identify`（用户名和头像）和 `guilds.members.read`（服务器中的成员信息）。WebShare 只查询配置的服务器，不读取用户加入的全部服务器列表。多个服务器 ID 用逗号分隔，用户是其中任意一个服务器的成员即可。用户本地没有保存昵称时，房间内的昵称和头像默认使用其在该服务器的昵称和头像，没有时使用 Discord 账号的名称和头像。
-
-成员身份在登录时检查。登录状态保存在 HttpOnly Cookie 中，从登录起有效 30 天（`DISCORD_AUTH_SESSION_DAYS`）。到期后，登录过的浏览器会自动重新经过 Discord：已授权过该应用的账号不会再看到授权页，同时会重新检查成员身份。用户退出或被移出服务器后，在当前登录到期前仍可访问。会话使用由 Client Secret 派生的密钥签名，重置 Secret 会让所有人重新登录。服务器不保存 Discord 令牌（Token）。
-
-回调地址（Callback URL）默认使用浏览器访问的站点地址，在 Nginx 之后会读取 `X-Forwarded-Proto`；需要不同地址时设置 `DISCORD_AUTH_REDIRECT_URI`。拦截功能要求页面和接口位于同一来源（Origin），与默认部署方式一致；若 `VITE_SERVER_HOST` 指向其他来源，登录 Cookie 不会随请求发送。使用 `npm run ui` 在独立端口开发时同样不会发送 Cookie，因此请通过 `npm run build` 和 `npm start`（或 `npm run preview`）在 `http://localhost:8080` 测试，并在应用的 Redirects 中添加 `http://localhost:8080/auth/discord/callback`。使用同一份 `.env` 的建房机器人（`node server/discordBot.ts`）会自行签发会话，其 `/watch` 命令不受影响。
-
-执行 `npm run test:discord-auth` 运行离线检查，脚本不会连接 Discord。
-
-### Firebase 配置（用户身份验证）
-
-默认关闭登录。启用时使用自己的 Firebase 项目；应用不再默认连接上游账号或分析服务（Analytics）。
-
-项目使用 Firebase 进行身份验证（Authentication），用于用户登录、账号管理，以及房间锁定和永久房间等功能。
-
-所有登录用户享有相同的功能，没有订阅或付费等级。每位登录用户最多可以把 `PERMANENT_ROOM_LIMIT` 个房间设为永久房间（默认 20，设为 0 表示不限），永久房间的所有者可以设置房间密码、自定义链接、标题、简介和标题颜色。配置 PostgreSQL 时，`ROOM_CAPACITY` 限制单个房间的人数（默认 0，表示不限）。
-
-首先在 [Firebase 控制台](https://console.firebase.google.com/) 创建新的应用，或复用已有应用。创建后，点击左侧菜单中「Project overview」旁的齿轮图标，进入项目设置（Project Settings）。向下滚动，创建 Web 应用，并复制 Firebase SDK 配置片段中的 JSON 数据。
-
-接着在浏览器控制台（Browser Console）中执行 `JSON.stringify(PASTE_CONFIG_HERE)`，将配置转换为字符串，再把结果填入 `.env` 中的 `VITE_FIREBASE_CONFIG`。
-
-服务器端验证账号还需要 `FIREBASE_ADMIN_SDK_CONFIG`，按相同方式处理其配置。
-
-### 虚拟浏览器配置
-
-房间里的**虚拟浏览器**按钮目前只显示“建设中”提示。服务端支持和下面的配置说明会保留，供之后恢复这个功能时使用。
-
-项目支持通过云服务商或 Docker 容器（Container）创建虚拟浏览器，使用 [Neko](https://github.com/m1k1o/neko)。开发时使用 Docker 最方便。
-
-- 安装 Docker：`curl -fsSL https://get.docker.com | sh`。
-- 确保服务器已有 SSH 密钥对（SSH Key Pair），其中 `id_rsa` 位于 `~/.ssh` 目录。如果没有，执行 `ssh-keygen` 创建。
-- 如果 SSH 用户不是 `root`，配置 `DOCKER_VM_HOST_SSH_USER`。
-- 如果网页客户端（Web Client）与服务器不在同一台物理机器上，还需将 `DOCKER_VM_HOST` 设置为可从公网解析的地址，而不是 `localhost`。
-- 如果要运行托管实例池（Managed Instance Pool），无论使用云服务还是 Docker，都需配置 `VM_MANAGER_CONFIG`，并运行 vmWorker 服务。
-
-### 房间持久化
-
-- 在 `.env` 中添加 `DATABASE_URL` 来配置 PostgreSQL，使用 [sql/schema.sql](sql/schema.sql) 初始化新数据库结构（Database Schema）。
-- 这样即可让房间状态持久化（Persistence），在服务器重启后继续保留。
-
-房主和其他人都离开后，房间仍会保留。最后一位观看者离开或服务器重启时，房间会保存当前媒体、播放列表、聊天记录和播放进度，并停止播放。下一位观看者进入时，房间暂停在该进度，点击播放即可继续观看。屏幕共享和文件共享会在房间无人时结束。
-
-房主可以点击房间功能栏中的 **Delete Room** 删除房间，确认后才会执行。删除后所有人都会断开连接，房间及其播放列表和聊天记录会被永久删除。创建房间的浏览器就是房主。启用 Discord 登录拦截时，创建者的 Discord 账号也是房主，在任何设备上都可以删除。配置了 Firebase 时，永久房间的所有者同样可以删除。创建房间的浏览器会在本地存储（`webshare-owner-keys`）中保存一个保密的房主密钥（Owner Key），服务器只保存它的哈希值。此功能上线前创建的房间，以及 Discord 机器人创建的房间，都没有房主，无法用这种方式删除。
-
-首页和顶栏的 **New Room** 旁有 **Join Room** 按钮，可查看所有可加入的房间。每个房间显示标题、当前媒体、在线人数和最近活跃时间，设置了密码的房间会显示锁图标。连续 72 小时（`ROOM_ARCHIVE_HOURS`）无人进入的房间会被归档（Archive），不再出现在列表中。配置 PostgreSQL 时，用原链接打开归档房间仍可恢复播放进度，房间也会重新出现在列表中。未配置 PostgreSQL 时，房间只保存在内存中：服务器重启后房间会丢失，归档即删除。
-
-可选的维护脚本 `server/cleanup.ts` 只删除从未保存过状态的房间，归档房间仍可恢复。
-
-执行 `npm run test:rooms` 可启动真实服务器，检查房间持久化和房间列表。默认只运行内存模式的检查。如需同时检查数据库，将 `TEST_DATABASE_URL` 设置为一个空的、可随时丢弃的 PostgreSQL 数据库；脚本会在其中创建数据库结构，并在结束后删除。
-
-## 界面语言（Interface Language）
-
-界面支持英文和简体中文。可以通过顶栏 GitHub 图标旁的语言按钮切换，Discord 登录页的右上角也有该按钮；在房间里切换语言不会断开连接。浏览器会记住所选语言（保存在本地存储 `webshare-language` 中）。尚未选择时，浏览器语言为中文则显示中文，否则显示英文。
-
-翻译以英文原文作为键（Key）：新增界面文字时，用 `src/i18n` 中的 `t()` 包住（常量中的文字用 `msg()` 标记），并在 `src/i18n/zh.ts` 中添加中文。缺少翻译时显示英文。已知的服务器错误消息同样会被翻译；带有变化内容（例如 HTTP 状态码）的消息保持英文。执行 `npm run test:i18n` 可检查缺少翻译、`{占位符}` 不一致以及未使用的条目。
-
-## 技术栈（Technology Stack）
-
-- React
-- TypeScript
-- Node.js
-- Redis
-- PostgreSQL
-- Docker
-
-## 可选集成（Optional Integrations）
-
-运行自己的建房机器人时，设置 `DISCORD_BOT_TOKEN` 和 `DISCORD_SITE_URL`，可选设置 `DISCORD_API_URL`，然后执行 `node server/discordBot.ts`。
-
-后台任务（Workers）与虚拟浏览器基础设施需要单独配置。
-
-文件共享和视频聊天默认使用公共 STUN 服务。需要中继（TURN Relay）的网络应在 `VITE_ICE_SERVERS` 中填写自己的 ICE 服务器 JSON 数组并重新构建；配置会提供给客户端，Docker 构建可传入同名 `--build-arg`。
-
-浏览器设置、昵称、标识符（Identifier）和房间密码使用独立的 `webshare-*` 存储键（Storage Key）。
-
-## 来源与许可证（Credits and License）
-
-WebShare 最初使用 [WatchParty](https://github.com/howardchung/watchparty) 的代码。原始版权声明和 MIT 许可证保留在 [LICENSE](LICENSE) 中。可选虚拟浏览器仍依赖第三方镜像（Image）。
+基于 [WatchParty](https://github.com/howardchung/watchparty) · [MIT 许可证（License）](LICENSE)
